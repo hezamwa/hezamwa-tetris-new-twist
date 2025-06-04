@@ -1,4 +1,4 @@
-import { useReducer, useCallback, useEffect } from 'react';
+import { useReducer, useCallback, useEffect, useState } from 'react';
 import { GameState, GameAction, Tetromino, TetrominoType, GameHistory } from '../types/types';
 import { GRID_WIDTH, GRID_HEIGHT, TETROMINOS, INITIAL_SPEED, DEFAULT_COLORS, POINTS } from '../utils/constants';
 
@@ -271,6 +271,18 @@ export const useGameLogic = () => {
   const updateColors = useCallback((colors: string[]) => 
     dispatch({ type: 'UPDATE_COLORS', colors }), []);
 
+  const startGame = useCallback(() => {
+    dispatch({
+      type: 'NEW_GAME'
+    });
+  }, []);
+
+  const handleGameOver = useCallback(() => {
+    dispatch({
+      type: 'RESTART_GAME'
+    });
+  }, []);
+
   useEffect(() => {
     if (gameState.isPaused || gameState.isGameOver) return;
 
@@ -293,7 +305,9 @@ export const useGameLogic = () => {
       newGame,
       restartGame,
       undoMove,
-      updateColors
+      updateColors,
+      startGame,
+      handleGameOver
     }
   };
 }; 
