@@ -24,35 +24,21 @@ const GameBoard = styled.div`
   grid-template-rows: repeat(20, 30px);
   gap: 1px;
   background: #333;
-  border: 2px solid #333;
+  border: 4px solid #4169e1;
+  border-radius: 4px;
   margin-bottom: 20px;
+  box-shadow: 0 0 20px rgba(65, 105, 225, 0.3);
 `;
 
 const SidePanel = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 20px;
+  gap: 12px;
+  padding: 12px;
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-`;
-
-const NextPiecePreview = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 30px);
-  grid-template-rows: repeat(4, 30px);
-  gap: 1px;
-  background: #333;
-  padding: 10px;
-  border-radius: 4px;
-`;
-
-const Cell = styled.div<{ color: string }>`
-  width: 30px;
-  height: 30px;
-  background: ${props => props.color || '#fff'};
-  border: ${props => props.color ? '1px solid rgba(0,0,0,0.2)' : '1px solid rgba(0,0,0,0.1)'};
+  width: 200px;
 `;
 
 const Controls = styled.div`
@@ -90,6 +76,35 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'warning' }>`
   }
 `;
 
+const SidePanelButtons = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 4px;
+`;
+
+const CompactButton = styled(Button)`
+  padding: 8px;
+  font-size: 14px;
+`;
+
+const NextPiecePreview = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 30px);
+  grid-template-rows: repeat(4, 30px);
+  gap: 1px;
+  background: #333;
+  padding: 8px;
+  border-radius: 4px;
+`;
+
+const Cell = styled.div<{ color: string }>`
+  width: 30px;
+  height: 30px;
+  background: ${props => props.color || '#fff'};
+  border: ${props => props.color ? '1px solid rgba(0,0,0,0.2)' : '1px solid rgba(0,0,0,0.1)'};
+`;
+
 const ColorSelector = styled.div`
   margin-bottom: 20px;
 `;
@@ -105,9 +120,44 @@ const ColorOption = styled.div<{ color: string; selected: boolean }>`
 `;
 
 const StatsDisplay = styled.div`
-  font-size: 18px;
-  line-height: 1.5;
-  margin-bottom: 20px;
+  font-size: 16px;
+  line-height: 1.3;
+  margin: 4px 0;
+`;
+
+const ControlPanel = styled.div`
+  display: grid;
+  grid-template-areas:
+    ". up ."
+    "left center right"
+    ". down .";
+  grid-template-columns: repeat(3, 50px);
+  grid-template-rows: repeat(3, 50px);
+  gap: 4px;
+`;
+
+const ControlButton = styled(Button)`
+  width: 50px;
+  height: 50px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  border-radius: 50%;
+  background: #2196F3;
+  touch-action: manipulation;
+
+  &:active {
+    transform: scale(0.95);
+  }
+`;
+
+const GameControls = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 12px;
 `;
 
 const TetrisGame: React.FC = () => {
@@ -143,6 +193,15 @@ const TetrisGame: React.FC = () => {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [actions, gameState.isGameOver, gameState.isPaused]);
+
+  useEffect(() => {
+    if (gameState.isGameCompleted) {
+      const timer = setTimeout(() => {
+        actions.newGame();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.isGameCompleted, actions]);
 
   const handleColorSelection = (color: string) => {
     const currentColors = gameState.selectedColors;
@@ -202,54 +261,6 @@ const TetrisGame: React.FC = () => {
 
   return (
     <GameContainer>
-      <h1>Tetris</h1>
-      
-      <ColorSelector>
-        <h3>Select Colors (2-7):</h3>
-        {DEFAULT_COLORS.map((color, index) => (
-          <ColorOption
-            key={color}
-            color={color}
-            selected={gameState.selectedColors.includes(color)}
-            onClick={() => handleColorSelection(color)}
-          />
-        ))}
-      </ColorSelector>
-
-      <Controls>
-        <Button variant="primary" onClick={actions.newGame}>New Game</Button>
-        <Button 
-          variant="primary"
-          onClick={gameState.isPaused ? actions.resume : actions.pause}
-          disabled={gameState.isGameOver}
-        >
-          {gameState.isPaused ? 'Resume' : 'Pause'}
-        </Button>
-        <Button 
-          variant="warning" 
-          onClick={actions.restartGame}
-          disabled={gameState.isGameOver && !gameState.isGameCompleted}
-        >
-          Restart Game
-        </Button>
-        <Button 
-          variant="secondary" 
-          onClick={actions.undoMove}
-          disabled={gameState.history.length === 0}
-        >
-          Undo Last Move
-        </Button>
-      </Controls>
-
-      <StatsDisplay>
-        <div>Current Score: {gameState.score}</div>
-        <div>Target Score: {gameState.targetScore}</div>
-        <div>Global Score: {gameState.globalScore}</div>
-        <div>Games Completed: {gameState.gamesCompleted}</div>
-        <div>Level: {gameState.level}</div>
-        <div>Moves Available to Undo: {gameState.history.length}</div>
-      </StatsDisplay>
-
       <GameArea>
         <GameBoard>
           {displayGrid.map((row, y) =>
@@ -262,10 +273,72 @@ const TetrisGame: React.FC = () => {
           )}
         </GameBoard>
 
-        <SidePanel>
-          <h3>Next Piece</h3>
-          {renderNextPiece()}
-        </SidePanel>
+        <div>
+          <SidePanel>
+            <h2>Next Piece</h2>
+            {renderNextPiece()}
+            <StatsDisplay>
+              <div>Score: {gameState.score}/{gameState.targetScore}</div>
+              <div>Level: {gameState.level}</div>
+              <div>Games Won: {gameState.gamesCompleted}</div>
+            </StatsDisplay>
+            <Button
+              onClick={() => gameState.isGameOver ? actions.newGame() : gameState.isPaused ? actions.resume() : actions.pause()}
+            >
+              {gameState.isGameOver ? 'New Game' : gameState.isPaused ? 'Resume' : 'Pause'}
+            </Button>
+          </SidePanel>
+
+          <SidePanelButtons>
+            <CompactButton 
+              variant="warning" 
+              onClick={actions.restartGame}
+              disabled={gameState.isGameOver && !gameState.isGameCompleted}
+            >
+              Restart
+            </CompactButton>
+            <CompactButton 
+              variant="secondary" 
+              onClick={actions.undoMove}
+              disabled={gameState.history.length === 0}
+            >
+              Undo
+            </CompactButton>
+          </SidePanelButtons>
+
+          <GameControls>
+            <ControlPanel>
+              <ControlButton
+                style={{ gridArea: 'up' }}
+                onClick={actions.rotate}
+                disabled={gameState.isGameOver || gameState.isPaused}
+              >
+                ↻
+              </ControlButton>
+              <ControlButton
+                style={{ gridArea: 'left' }}
+                onClick={actions.moveLeft}
+                disabled={gameState.isGameOver || gameState.isPaused}
+              >
+                ←
+              </ControlButton>
+              <ControlButton
+                style={{ gridArea: 'right' }}
+                onClick={actions.moveRight}
+                disabled={gameState.isGameOver || gameState.isPaused}
+              >
+                →
+              </ControlButton>
+              <ControlButton
+                style={{ gridArea: 'down' }}
+                onClick={actions.moveDown}
+                disabled={gameState.isGameOver || gameState.isPaused}
+              >
+                ↓
+              </ControlButton>
+            </ControlPanel>
+          </GameControls>
+        </div>
       </GameArea>
 
       {gameState.isGameOver && (
@@ -276,9 +349,20 @@ const TetrisGame: React.FC = () => {
       )}
 
       {gameState.isGameCompleted && (
-        <div>
-          <h2>Congratulations! You've reached the target score!</h2>
-          <Button onClick={actions.newGame}>Play Again</Button>
+        <div style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'rgba(0, 0, 0, 0.8)',
+          color: '#fff',
+          padding: '20px',
+          borderRadius: '10px',
+          textAlign: 'center',
+          zIndex: 1000
+        }}>
+          <h2>Level {gameState.level} Completed!</h2>
+          <p>Starting next level in 2 seconds...</p>
         </div>
       )}
     </GameContainer>

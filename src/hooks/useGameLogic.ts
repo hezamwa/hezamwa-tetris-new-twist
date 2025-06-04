@@ -65,10 +65,10 @@ const checkLines = (grid: string[][]): { newGrid: string[][], linesCleared: numb
   return { newGrid, linesCleared };
 };
 
-const TARGET_SCORE = 10000; // Score needed to complete the game
+const TARGET_SCORE = 1000; // Score needed to complete the game
 const MAX_HISTORY = 10; // Maximum number of moves to store for undo
 
-const initialState: GameState = {
+const createInitialState = (previousLevel = 1) => ({
   grid: createEmptyGrid(),
   currentPiece: null,
   nextPiece: null,
@@ -76,14 +76,16 @@ const initialState: GameState = {
   globalScore: 0,
   gamesCompleted: 0,
   targetScore: TARGET_SCORE,
-  level: 1,
+  level: previousLevel,
   isGameOver: false,
   isPaused: false,
   isGameCompleted: false,
   availableColors: DEFAULT_COLORS,
   selectedColors: DEFAULT_COLORS.slice(0, 4),
   history: []
-};
+});
+
+const initialState: GameState = createInitialState();
 
 const gameReducer = (state: GameState, action: GameAction): GameState => {
   if (state.isGameOver && !['NEW_GAME', 'RESTART_GAME', 'UNDO_MOVE'].includes(action.type)) return state;
@@ -194,15 +196,14 @@ const gameReducer = (state: GameState, action: GameAction): GameState => {
     case 'NEW_GAME': {
       const currentPiece = createRandomTetromino(state.selectedColors);
       const nextPiece = createRandomTetromino(state.selectedColors);
+      const nextLevel = state.isGameCompleted ? state.level + 1 : 1;
       return {
-        ...initialState,
-        selectedColors: state.selectedColors,
-        currentPiece,
-        nextPiece,
+        ...createInitialState(nextLevel),
         globalScore: state.globalScore,
         gamesCompleted: state.gamesCompleted,
-        grid: createEmptyGrid(),
-        history: []
+        selectedColors: state.selectedColors,
+        currentPiece,
+        nextPiece
       };
     }
 
