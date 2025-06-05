@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Container,
@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { Google as GoogleIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { checkBrowserCompatibility, getAuthErrorMessage } from '../utils/authDebug';
 
 export const Login = () => {
   const [formData, setFormData] = useState({
@@ -20,9 +21,18 @@ export const Login = () => {
     password: ''
   });
   const [error, setError] = useState('');
+  const [warning, setWarning] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { login, loginWithGoogle } = useAuth();
+
+  useEffect(() => {
+    // Check browser compatibility on component mount
+    const compatibility = checkBrowserCompatibility();
+    if (!compatibility.isCompatible) {
+      setWarning(`Browser compatibility issues detected: ${compatibility.issues.join(', ')}`);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +42,8 @@ export const Login = () => {
       setLoading(true);
       await login(formData.email, formData.password);
       navigate('/profile');
-    } catch (err) {
-      setError('Failed to sign in');
+    } catch (err: any) {
+      setError(getAuthErrorMessage(err));
       console.error(err);
     } finally {
       setLoading(false);
@@ -46,8 +56,8 @@ export const Login = () => {
       setLoading(true);
       await loginWithGoogle();
       navigate('/profile');
-    } catch (err) {
-      setError('Failed to sign in with Google');
+    } catch (err: any) {
+      setError(getAuthErrorMessage(err));
       console.error(err);
     } finally {
       setLoading(false);
@@ -68,6 +78,7 @@ export const Login = () => {
         <Typography variant="h4" component="h1" gutterBottom align="center">
           Login
         </Typography>
+        {warning && <Alert severity="warning" sx={{ mb: 2 }}>{warning}</Alert>}
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
         <Box component="form" onSubmit={handleSubmit}>
           <TextField

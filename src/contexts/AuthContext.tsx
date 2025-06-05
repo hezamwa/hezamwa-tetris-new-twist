@@ -6,8 +6,7 @@ import {
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult
+  signInWithPopup
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Timestamp, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -41,20 +40,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Handle Google redirect result
-    const handleRedirectResult = async () => {
-      try {
-        const result = await getRedirectResult(auth);
-        if (result?.user) {
-          await handleGoogleUser(result.user);
-        }
-      } catch (error) {
-        console.error('Error handling redirect result:', error);
-      }
-    };
-
-    handleRedirectResult();
-
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
@@ -158,8 +143,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    // Use redirect instead of popup to avoid COOP policy issues
-    await signInWithRedirect(auth, provider);
+    // Add additional scopes if needed
+    provider.addScope('profile');
+    provider.addScope('email');
+    
+    try {
+      const result = await signInWithPopup(auth, provider);
+      if (result.user) {
+        await handleGoogleUser(result.user);
+      }
+    } catch (error: any) {
+      console.error('Error signing in with Google:', error);
+      // Handle specific popup blocked errors
+      if (error.code === 'auth/popup-blocked') {
+        throw new Error('Popup was blocked by browser. Please allow popups and try again.');
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error('Authentication cancelled by user.');
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        // This happens when multiple popup requests are made
+        throw new Error('Another authentication request is in progress.');
+      }
+      throw error;
+    }
   };
 
   const logout = () => {
