@@ -18,7 +18,6 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 
 export const Home = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
