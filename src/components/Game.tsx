@@ -7,9 +7,10 @@ import { useAuth } from '../contexts/AuthContext';
 import TetrisGame from './TetrisGame';
 
 const Game = () => {
-  const { currentUser, userProfile, updateProfile } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const navigate = useNavigate();
   const [gameStartTime, setGameStartTime] = useState<Date | null>(null);
+  const [currentGameId, setCurrentGameId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!currentUser && !userProfile) {
@@ -18,45 +19,63 @@ const Game = () => {
   }, [currentUser, userProfile, navigate]);
 
   const handleGameStart = () => {
-    setGameStartTime(new Date());
+    const startTime = new Date();
+    const gameId = `${currentUser?.uid}_${startTime.getTime()}`;
+    setGameStartTime(startTime);
+    setCurrentGameId(gameId);
+    console.log('Game started at:', startTime);
   };
 
   const handleGameEnd = async (score: number, level: number) => {
-    if (!currentUser || !userProfile || !gameStartTime) return;
+    if (!currentUser || !userProfile || !gameStartTime || !currentGameId) {
+      console.log('Missing required data for game end:', { 
+        currentUser: !!currentUser, 
+        userProfile: !!userProfile, 
+        gameStartTime: !!gameStartTime,
+        currentGameId: !!currentGameId
+      });
+      return;
+    }
 
     const gameEndTime = new Date();
     const playTime = Math.floor((gameEndTime.getTime() - gameStartTime.getTime()) / 1000);
 
-    const userRef = doc(db, 'users', currentUser.uid);
-    const updates: any = {
-      'gameStats.gameCount': increment(1),
-      'gameStats.totalScore': increment(score),
-      'gameStats.totalPlayTime': increment(playTime)
-    };
-
-    if (score > userProfile.gameStats.highScore) {
-      updates['gameStats.highScore'] = score;
-    }
-
-    if (level > userProfile.gameStats.highestLevel) {
-      updates['gameStats.highestLevel'] = level;
-    }
-
-    await updateDoc(userRef, updates);
-
-    // Update local state
-    const updatedStats = {
-      ...userProfile.gameStats,
-      gameCount: userProfile.gameStats.gameCount + 1,
-      totalScore: userProfile.gameStats.totalScore + score,
-      totalPlayTime: userProfile.gameStats.totalPlayTime + playTime,
-      highScore: Math.max(userProfile.gameStats.highScore, score),
-      highestLevel: Math.max(userProfile.gameStats.highestLevel, level)
-    };
-
-    await updateProfile({
-      gameStats: updatedStats
+    console.log('Game ended:', {
+      score,
+      level,
+      playTime,
+      gameStartTime,
+      gameEndTime
     });
+
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      const updates: any = {
+        'gameStats.gameCount': increment(1),
+        'gameStats.totalScore': increment(score),
+        'gameStats.totalPlayTime': increment(playTime)
+      };
+
+      // Only update high score if this score is higher
+      if (score > userProfile.gameStats.highScore) {
+        updates['gameStats.highScore'] = score;
+      }
+
+      // Only update highest level if this level is higher
+      if (level > userProfile.gameStats.highestLevel) {
+        updates['gameStats.highestLevel'] = level;
+      }
+
+      await updateDoc(userRef, updates);
+      console.log('Game stats updated successfully');
+
+      // Reset game tracking
+      setGameStartTime(null);
+      setCurrentGameId(null);
+
+    } catch (error) {
+      console.error('Error updating game stats:', error);
+    }
   };
 
   if (!currentUser || !userProfile) {
@@ -90,6 +109,13 @@ const Game = () => {
             {Math.floor((userProfile.gameStats.totalPlayTime % 3600) / 60)}m
           </Typography>
         </Box>
+        {gameStartTime && (
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'info.light', borderRadius: 1 }}>
+            <Typography variant="body2" color="info.contrastText">
+              Game in progress... Started at {gameStartTime.toLocaleTimeString()}
+            </Typography>
+          </Box>
+        )}
       </Paper>
       <TetrisGame
         onGameStart={handleGameStart}

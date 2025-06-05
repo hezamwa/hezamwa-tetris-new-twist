@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import styled from 'styled-components';
 import { useGameLogic } from '../hooks/useGameLogic';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -172,6 +172,10 @@ interface TetrisGameProps {
 const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
   const { gameState, actions } = useGameLogic();
 
+  // Track if game has started to call onGameStart only once per game
+  const [gameStarted, setGameStarted] = useState(false);
+  const [previousGameState, setPreviousGameState] = useState(gameState);
+
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (gameState.isGameOver) return;
@@ -202,6 +206,30 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [actions, gameState.isGameOver, gameState.isPaused]);
+
+  // Handle game start detection
+  useEffect(() => {
+    if (!gameStarted && gameState.currentPiece && !gameState.isGameOver && !gameState.isPaused) {
+      setGameStarted(true);
+      onGameStart?.();
+    }
+  }, [gameState.currentPiece, gameState.isGameOver, gameState.isPaused, gameStarted, onGameStart]);
+
+  // Handle game end detection
+  useEffect(() => {
+    if (gameStarted && (gameState.isGameOver || gameState.isGameCompleted)) {
+      onGameEnd?.(gameState.score, gameState.level);
+      setGameStarted(false);
+    }
+  }, [gameState.isGameOver, gameState.isGameCompleted, gameState.score, gameState.level, gameStarted, onGameEnd]);
+
+  // Handle new game - reset game started flag
+  useEffect(() => {
+    if (previousGameState.isGameOver && !gameState.isGameOver && !gameState.isGameCompleted) {
+      setGameStarted(false);
+    }
+    setPreviousGameState(gameState);
+  }, [gameState, previousGameState]);
 
   useEffect(() => {
     if (gameState.isGameCompleted) {
@@ -268,16 +296,6 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
       });
     });
   }
-
-  const startGame = useCallback(() => {
-    // ... existing startGame logic ...
-    onGameStart?.();
-  }, [onGameStart]);
-
-  const gameOver = useCallback(() => {
-    // ... existing gameOver logic ...
-    onGameEnd?.(gameState.score, gameState.level);
-  }, [onGameEnd, gameState.score, gameState.level]);
 
   return (
     <GameContainer>

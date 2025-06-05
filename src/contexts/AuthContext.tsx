@@ -8,7 +8,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Timestamp, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { UserProfile } from '../types/user';
 
@@ -20,6 +20,7 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  refreshProfile: () => Promise<void>;
   loading: boolean;
 }
 
@@ -42,10 +43,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        const profileDoc = await getDoc(doc(db, 'users', user.uid));
-        if (profileDoc.exists()) {
-          setUserProfile(profileDoc.data() as UserProfile);
-        }
+        // Set up real-time listener for user profile
+        const userDocRef = doc(db, 'users', user.uid);
+        const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
+          if (doc.exists()) {
+            setUserProfile(doc.data() as UserProfile);
+          }
+        });
+
+        // Store the unsubscribe function for cleanup
+        return () => {
+          unsubscribeProfile();
+        };
       } else {
         setUserProfile(null);
       }
@@ -54,6 +63,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return unsubscribe;
   }, []);
+
+  const refreshProfile = async () => {
+    if (!currentUser) return;
+    
+    try {
+      const profileDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      if (profileDoc.exists()) {
+        setUserProfile(profileDoc.data() as UserProfile);
+      }
+    } catch (error) {
+      console.error('Error refreshing profile:', error);
+    }
+  };
 
   const signup = async (email: string, password: string, fullName: string) => {
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
@@ -123,7 +145,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!currentUser) throw new Error('No user logged in');
     await updateDoc(doc(db, 'users', currentUser.uid), data);
-    setUserProfile(prev => prev ? { ...prev, ...data } : null);
+    // Note: We don't need to manually update local state anymore
+    // because the onSnapshot listener will handle it automatically
   };
 
   const value = {
@@ -134,6 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loginWithGoogle,
     logout,
     updateProfile,
+    refreshProfile,
     loading
   };
 
