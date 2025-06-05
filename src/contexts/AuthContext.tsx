@@ -41,19 +41,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check if Firebase auth is available
+    if (!auth) {
+      console.warn('Firebase auth not available - running in demo mode');
+      setLoading(false);
+      return;
+    }
+
     // Set a timeout to ensure loading doesn't hang forever
     const loadingTimeout = setTimeout(() => {
       console.warn('Auth loading timeout - showing content anyway');
       setLoading(false);
-    }, 5000); // 5 second timeout
-
-    // Check if Firebase auth is available
-    if (!auth) {
-      console.warn('Firebase auth not available - running in demo mode');
-      clearTimeout(loadingTimeout);
-      setLoading(false);
-      return;
-    }
+    }, 3000); // 3 second timeout
 
     try {
       const unsubscribe = onAuthStateChanged(auth as Auth, async (user) => {
@@ -201,7 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }; 

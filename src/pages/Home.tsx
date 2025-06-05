@@ -22,6 +22,8 @@ export const Home = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
+  console.log('Home component rendering...', { currentUser });
+
   const features = [
     {
       icon: <SportsEsports fontSize="large" />,
@@ -44,6 +46,8 @@ export const Home = () => {
       description: 'Face increasing challenges as you advance through levels.'
     }
   ];
+
+  console.log('Home component about to render content...');
 
   return (
     <Box>
