@@ -6,7 +6,6 @@ import {
   Button,
   Box,
   Paper,
-  useTheme,
   Stack
 } from '@mui/material';
 import {
