@@ -1,5 +1,9 @@
 {
   "version": 2,
+  "env": {
+    "CI": "false",
+    "GENERATE_SOURCEMAP": "false"
+  },
   "builds": [
     {
       "src": "package.json",
