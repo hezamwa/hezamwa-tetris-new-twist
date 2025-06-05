@@ -209,7 +209,18 @@ export const Leaderboard = () => {
                   </Box>
                 </TableCell>
                 <TableCell align="right">
-                  <strong>{user.gameStats[valueKey]?.toLocaleString?.() || user.gameStats[valueKey]}</strong>
+                  <strong>
+                    {(() => {
+                      const value = user.gameStats[valueKey];
+                      if (typeof value === 'number') {
+                        return value.toLocaleString();
+                      }
+                      if (typeof value === 'string') {
+                        return value;
+                      }
+                      return 'N/A';
+                    })()}
+                  </strong>
                 </TableCell>
                 {isTimeBased && (
                   <TableCell align="right">

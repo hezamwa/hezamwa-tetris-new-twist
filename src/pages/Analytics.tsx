@@ -12,7 +12,6 @@ import {
   Chip,
   Avatar
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
 import {
   TrendingUp,
   Assessment,
@@ -155,128 +154,114 @@ export const Analytics: React.FC = () => {
       </Box>
 
       {/* Quick Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
-                  <TrendingUp />
-                </Avatar>
-                <Box>
-                  <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-                    {currentStats.averageScore.toLocaleString()}
-                  </Typography>
-                  <Typography color="text.secondary">
-                    Average Score
-                  </Typography>
-                </Box>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 3, mb: 4 }}>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <Avatar sx={{ bgcolor: 'primary.main', mr: 2 }}>
+                <TrendingUp />
+              </Avatar>
+              <Box>
+                <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
+                  {currentStats.averageScore.toLocaleString()}
+                </Typography>
+                <Typography color="text.secondary">
+                  Average Score
+                </Typography>
               </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+            </Box>
+          </CardContent>
+        </Card>
 
-        <Grid xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
-                  <Speed />
-                </Avatar>
-                <Box>
-                  <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-                    {currentStats.piecesPerMinute.toFixed(1)}
-                  </Typography>
-                  <Typography color="text.secondary">
-                    Pieces Per Minute
-                  </Typography>
-                </Box>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <Avatar sx={{ bgcolor: 'success.main', mr: 2 }}>
+                <Speed />
+              </Avatar>
+              <Box>
+                <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
+                  {currentStats.piecesPerMinute.toFixed(1)}
+                </Typography>
+                <Typography color="text.secondary">
+                  Pieces Per Minute
+                </Typography>
               </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+            </Box>
+          </CardContent>
+        </Card>
 
-        <Grid xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
-                  <Assessment />
-                </Avatar>
-                <Box>
-                  <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-                    {calculateGrade(lineClearStats)}
-                  </Typography>
-                  <Typography color="text.secondary">
-                    Performance Grade
-                  </Typography>
-                </Box>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <Avatar sx={{ bgcolor: 'warning.main', mr: 2 }}>
+                <Assessment />
+              </Avatar>
+              <Box>
+                <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
+                  {calculateGrade(lineClearStats)}
+                </Typography>
+                <Typography color="text.secondary">
+                  Performance Grade
+                </Typography>
               </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+            </Box>
+          </CardContent>
+        </Card>
 
-        <Grid xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
-                  <BarChart />
-                </Avatar>
-                <Box>
-                  <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
-                    {currentStats.totalGames}
-                  </Typography>
-                  <Typography color="text.secondary">
-                    Total Games
-                  </Typography>
-                </Box>
+        <Card>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+              <Avatar sx={{ bgcolor: 'info.main', mr: 2 }}>
+                <BarChart />
+              </Avatar>
+              <Box>
+                <Typography variant="h4" component="div" sx={{ fontWeight: 'bold' }}>
+                  {currentStats.totalGames}
+                </Typography>
+                <Typography color="text.secondary">
+                  Total Games
+                </Typography>
               </Box>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
 
       {/* Performance Percentiles */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid xs={12}>
-          <Card>
-            <CardHeader 
-              title="🎯 Performance Percentiles" 
-              subheader="How you compare to other players"
-            />
-            <CardContent>
-              <Grid container spacing={2}>
-                {comparisonData.map((item) => (
-                  <Grid xs={12} sm={6} md={2.4} key={item.category}>
-                    <Box sx={{ textAlign: 'center', p: 2 }}>
-                      <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>
-                        {item.percentile}th
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        {item.category}
-                      </Typography>
-                      <Chip 
-                        label={
-                          item.percentile >= 90 ? 'Elite' : 
-                          item.percentile >= 75 ? 'Advanced' : 
-                          item.percentile >= 50 ? 'Average' : 'Beginner'
-                        }
-                        color={
-                          item.percentile >= 90 ? 'error' : 
-                          item.percentile >= 75 ? 'warning' : 
-                          item.percentile >= 50 ? 'primary' : 'default'
-                        }
-                        size="small"
-                      />
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
+      <Card sx={{ mb: 4 }}>
+        <CardHeader 
+          title="🎯 Performance Percentiles" 
+          subheader="How you compare to other players"
+        />
+        <CardContent>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 2 }}>
+            {comparisonData.map((item) => (
+              <Box key={item.category} sx={{ textAlign: 'center', p: 2 }}>
+                <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 1 }}>
+                  {item.percentile}th
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  {item.category}
+                </Typography>
+                <Chip 
+                  label={
+                    item.percentile >= 90 ? 'Elite' : 
+                    item.percentile >= 75 ? 'Advanced' : 
+                    item.percentile >= 50 ? 'Average' : 'Beginner'
+                  }
+                  color={
+                    item.percentile >= 90 ? 'error' : 
+                    item.percentile >= 75 ? 'warning' : 
+                    item.percentile >= 50 ? 'primary' : 'default'
+                  }
+                  size="small"
+                />
+              </Box>
+            ))}
+          </Box>
+        </CardContent>
+      </Card>
 
       {/* Tabbed Analytics */}
       <Paper sx={{ width: '100%' }}>
@@ -303,9 +288,9 @@ export const Analytics: React.FC = () => {
         </TabPanel>
 
         <TabPanel value={tabValue} index={1}>
-          <Grid container spacing={3}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {/* Detailed Statistics */}
-            <Grid xs={12} md={6}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3 }}>
               <Card>
                 <CardHeader title="📈 Game Statistics" />
                 <CardContent>
@@ -333,9 +318,7 @@ export const Analytics: React.FC = () => {
                   </Box>
                 </CardContent>
               </Card>
-            </Grid>
 
-            <Grid xs={12} md={6}>
               <Card>
                 <CardHeader title="🎯 Line Clear Breakdown" />
                 <CardContent>
@@ -359,20 +342,18 @@ export const Analytics: React.FC = () => {
                   </Box>
                 </CardContent>
               </Card>
-            </Grid>
+            </Box>
 
             {/* Mode-specific stats would go here */}
-            <Grid xs={12}>
-              <Card>
-                <CardHeader title="🎮 Game Mode Performance" />
-                <CardContent>
-                  <Typography variant="body1" color="text.secondary">
-                    Detailed game mode statistics will be displayed here, showing performance across Classic, Time Attack, Survival, and Marathon modes.
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
+            <Card>
+              <CardHeader title="🎮 Game Mode Performance" />
+              <CardContent>
+                <Typography variant="body1" color="text.secondary">
+                  Detailed game mode statistics will be displayed here, showing performance across Classic, Time Attack, Survival, and Marathon modes.
+                </Typography>
+              </CardContent>
+            </Card>
+          </Box>
         </TabPanel>
 
         <TabPanel value={tabValue} index={2}>
