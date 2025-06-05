@@ -15,7 +15,7 @@ import {
   Paper,
   CircularProgress
 } from '@mui/material';
-import { collection, query, orderBy, limit, getDocs, Firestore } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { UserProfile } from '../types/user';
 
@@ -54,14 +54,8 @@ export const Leaderboard = () => {
 
   useEffect(() => {
     const fetchLeaderboards = async () => {
-      if (!db) {
-        console.warn('Database not available - leaderboards disabled');
-        setLoading(false);
-        return;
-      }
-
       try {
-        const usersRef = collection(db as Firestore, 'users');
+        const usersRef = collection(db, 'users');
 
         // Fetch high scores
         const highScoresQuery = query(
@@ -105,18 +99,6 @@ export const Leaderboard = () => {
   };
 
   const renderLeaderboardTable = (data: UserProfile[], valueKey: keyof UserProfile['gameStats']) => {
-    if (!db) {
-      return (
-        <Box sx={{ textAlign: 'center', py: 4 }}>
-          <Typography variant="body1" color="text.secondary">
-            Leaderboards are not available in demo mode.
-            <br />
-            Configure Firebase to enable leaderboards.
-          </Typography>
-        </Box>
-      );
-    }
-
     if (data.length === 0) {
       return (
         <Box sx={{ textAlign: 'center', py: 4 }}>

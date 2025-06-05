@@ -6,10 +6,9 @@ import {
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup,
-  Auth
+  signInWithPopup
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Timestamp, onSnapshot, Firestore } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Timestamp, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { UserProfile } from '../types/user';
 
@@ -41,62 +40,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if Firebase auth is available
-    if (!auth) {
-      console.warn('Firebase auth not available - running in demo mode');
-      setLoading(false);
-      return;
-    }
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+      if (user) {
+        try {
+          // Set up real-time listener for user profile
+          const userDocRef = doc(db, 'users', user.uid);
+          const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
+            if (doc.exists()) {
+              setUserProfile(doc.data() as UserProfile);
+            }
+          });
 
-    // Set a timeout to ensure loading doesn't hang forever
-    const loadingTimeout = setTimeout(() => {
-      console.warn('Auth loading timeout - showing content anyway');
-      setLoading(false);
-    }, 3000); // 3 second timeout
-
-    try {
-      const unsubscribe = onAuthStateChanged(auth as Auth, async (user) => {
-        clearTimeout(loadingTimeout); // Clear timeout since auth loaded
-        setCurrentUser(user);
-        if (user && db) {
-          try {
-            // Set up real-time listener for user profile
-            const userDocRef = doc(db as Firestore, 'users', user.uid);
-            const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
-              if (doc.exists()) {
-                setUserProfile(doc.data() as UserProfile);
-              }
-            });
-
-            // Store the unsubscribe function for cleanup
-            return () => {
-              unsubscribeProfile();
-            };
-          } catch (profileError) {
-            console.error('Error setting up profile listener:', profileError);
-          }
-        } else {
-          setUserProfile(null);
+          // Store the unsubscribe function for cleanup
+          return () => {
+            unsubscribeProfile();
+          };
+        } catch (profileError) {
+          console.error('Error setting up profile listener:', profileError);
         }
-        setLoading(false);
-      });
+      } else {
+        setUserProfile(null);
+      }
+      setLoading(false);
+    });
 
-      return () => {
-        clearTimeout(loadingTimeout);
-        unsubscribe();
-      };
-    } catch (error) {
-      console.error('Firebase auth initialization error:', error);
-      clearTimeout(loadingTimeout);
-      setLoading(false); // Show content even if Firebase fails
-    }
+    return unsubscribe;
   }, []);
 
   const refreshProfile = async () => {
-    if (!currentUser || !db) return;
+    if (!currentUser) return;
     
     try {
-      const profileDoc = await getDoc(doc(db as Firestore, 'users', currentUser.uid));
+      const profileDoc = await getDoc(doc(db, 'users', currentUser.uid));
       if (profileDoc.exists()) {
         setUserProfile(profileDoc.data() as UserProfile);
       }
@@ -106,9 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signup = async (email: string, password: string, fullName: string) => {
-    if (!auth || !db) throw new Error('Firebase not configured');
-    
-    const { user } = await createUserWithEmailAndPassword(auth as Auth, email, password);
+    const { user } = await createUserWithEmailAndPassword(auth, email, password);
     const newProfile: UserProfile = {
       uid: user.uid,
       email,
@@ -123,29 +97,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         totalPlayTime: 0
       }
     };
-    await setDoc(doc(db as Firestore, 'users', user.uid), newProfile);
+    await setDoc(doc(db, 'users', user.uid), newProfile);
     setUserProfile(newProfile);
   };
 
   const login = async (email: string, password: string) => {
-    if (!auth) throw new Error('Firebase not configured');
-    
-    await signInWithEmailAndPassword(auth as Auth, email, password);
-    if (currentUser && db) {
-      await updateDoc(doc(db as Firestore, 'users', currentUser.uid), {
+    await signInWithEmailAndPassword(auth, email, password);
+    if (currentUser) {
+      await updateDoc(doc(db, 'users', currentUser.uid), {
         lastLoginDate: serverTimestamp()
       });
     }
   };
 
   const loginWithGoogle = async () => {
-    if (!auth || !db) throw new Error('Firebase not configured');
-    
     const provider = new GoogleAuthProvider();
-    const { user } = await signInWithPopup(auth as Auth, provider);
+    const { user } = await signInWithPopup(auth, provider);
     
     // Check if user profile exists
-    const profileDoc = await getDoc(doc(db as Firestore, 'users', user.uid));
+    const profileDoc = await getDoc(doc(db, 'users', user.uid));
     
     if (!profileDoc.exists()) {
       // Create new profile for Google users
@@ -164,24 +134,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           totalPlayTime: 0
         }
       };
-      await setDoc(doc(db as Firestore, 'users', user.uid), newProfile);
+      await setDoc(doc(db, 'users', user.uid), newProfile);
       setUserProfile(newProfile);
     } else {
       // Update last login date
-      await updateDoc(doc(db as Firestore, 'users', user.uid), {
+      await updateDoc(doc(db, 'users', user.uid), {
         lastLoginDate: serverTimestamp()
       });
     }
   };
 
   const logout = () => {
-    if (!auth) throw new Error('Firebase not configured');
-    return signOut(auth as Auth);
+    return signOut(auth);
   };
 
   const updateProfile = async (data: Partial<UserProfile>) => {
-    if (!currentUser || !db) throw new Error('Firebase not configured or no user logged in');
-    await updateDoc(doc(db as Firestore, 'users', currentUser.uid), data);
+    if (!currentUser) throw new Error('No user logged in');
+    await updateDoc(doc(db, 'users', currentUser.uid), data);
     // Note: We don't need to manually update local state anymore
     // because the onSnapshot listener will handle it automatically
   };

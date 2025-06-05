@@ -33,7 +33,7 @@ cd hezamwa-tetris-new-twist
 npm install
 ```
 
-3. Set up Firebase (optional, for authentication features):
+3. Set up Firebase (required for authentication features):
    - Create a Firebase project at https://console.firebase.google.com/
    - Enable Authentication and Firestore Database
    - Copy your Firebase configuration
@@ -87,14 +87,6 @@ To enable user authentication and profile features:
 6. **Configure Environment Variables**
    - Create `.env` file in project root
    - Add your Firebase configuration as shown above
-
-## Demo Mode
-
-The app will run in demo mode without Firebase configuration. In demo mode:
-- Landing page and game functionality work normally
-- Authentication features are disabled
-- No user profiles or statistics tracking
-- Local gameplay only
 
 ## Available Scripts
 

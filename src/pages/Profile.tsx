@@ -16,7 +16,7 @@ import { PhotoCamera } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useAuth } from '../contexts/AuthContext';
 import { storage } from '../config/firebase';
-import { ref, uploadBytes, getDownloadURL, FirebaseStorage } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { Timestamp } from 'firebase/firestore';
 
 export const Profile = () => {
@@ -33,17 +33,14 @@ export const Profile = () => {
   }
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files?.length || !storage) {
-      if (!storage) {
-        console.warn('Firebase Storage not available - avatar upload disabled');
-      }
+    if (!e.target.files?.length) {
       return;
     }
 
     try {
       setUploading(true);
       const file = e.target.files[0];
-      const storageRef = ref(storage as FirebaseStorage, `avatars/${userProfile.uid}`);
+      const storageRef = ref(storage, `avatars/${userProfile.uid}`);
       await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(storageRef);
       await updateProfile({ avatarUrl: downloadURL });
@@ -105,14 +102,14 @@ export const Profile = () => {
                 aria-label="upload picture"
                 component="span"
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading || !storage}
+                disabled={uploading}
                 sx={{
                   position: 'absolute',
                   bottom: 16,
                   right: 0,
                   backgroundColor: 'white'
                 }}
-                title={!storage ? 'Avatar upload disabled in demo mode' : 'Upload avatar'}
+                title="Upload avatar"
               >
                 <PhotoCamera />
               </IconButton>

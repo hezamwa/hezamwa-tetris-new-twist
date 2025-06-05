@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Button, Typography, Paper } from '@mui/material';
-import { doc, updateDoc, increment, Firestore } from 'firebase/firestore';
+import { doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import TetrisGame from './TetrisGame';
@@ -27,13 +27,12 @@ const Game = () => {
   };
 
   const handleGameEnd = async (score: number, level: number) => {
-    if (!currentUser || !userProfile || !gameStartTime || !currentGameId || !db) {
+    if (!currentUser || !userProfile || !gameStartTime || !currentGameId) {
       console.log('Missing required data for game end:', { 
         currentUser: !!currentUser, 
         userProfile: !!userProfile, 
         gameStartTime: !!gameStartTime,
-        currentGameId: !!currentGameId,
-        db: !!db
+        currentGameId: !!currentGameId
       });
       return;
     }
@@ -50,7 +49,7 @@ const Game = () => {
     });
 
     try {
-      const userRef = doc(db as Firestore, 'users', currentUser.uid);
+      const userRef = doc(db, 'users', currentUser.uid);
       const updates: any = {
         'gameStats.gameCount': increment(1),
         'gameStats.totalScore': increment(score),
