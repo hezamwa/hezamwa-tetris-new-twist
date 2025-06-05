@@ -16,6 +16,7 @@ export interface DetailedGameStats {
   perfectClears: number;
   tSpins: number;
   achievements: Achievement[];
+  lastGameDate?: Timestamp; // Track when the last game was played for time-based leaderboards
   // Mode-specific stats
   modeStats: {
     [key in GameMode]: {

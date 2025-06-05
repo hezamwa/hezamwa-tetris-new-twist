@@ -20,6 +20,17 @@ interface AuthContextType {
   loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  updateGameStats: (gameStats: {
+    score: number;
+    level: number;
+    linesCleared: number;
+    playTime: number;
+    lineClearStats: { singles: number; doubles: number; triples: number; tetrises: number; };
+    gameMode: string;
+    maxCombo: number;
+    perfectClears: number;
+    tSpins: number;
+  }) => Promise<void>;
   refreshProfile: () => Promise<void>;
   loading: boolean;
 }
@@ -101,6 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           perfectClears: 0,
           tSpins: 0,
           achievements: [],
+          lastGameDate: undefined,
           modeStats: {
             classic: { games: 0, bestScore: 0, totalPlayTime: 0 },
             'time-attack': { games: 0, bestScore: 0, bestTime: 0, totalPlayTime: 0 },
@@ -169,6 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         perfectClears: 0,
         tSpins: 0,
         achievements: [],
+        lastGameDate: undefined,
         modeStats: {
           classic: { games: 0, bestScore: 0, totalPlayTime: 0 },
           'time-attack': { games: 0, bestScore: 0, bestTime: 0, totalPlayTime: 0 },
@@ -236,6 +249,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // because the onSnapshot listener will handle it automatically
   };
 
+  const updateGameStats = async (gameStats: {
+    score: number;
+    level: number;
+    linesCleared: number;
+    playTime: number;
+    lineClearStats: { singles: number; doubles: number; triples: number; tetrises: number; };
+    gameMode: string;
+    maxCombo: number;
+    perfectClears: number;
+    tSpins: number;
+  }) => {
+    if (!currentUser) throw new Error('No user logged in');
+    
+    try {
+      const userRef = doc(db, 'users', currentUser.uid);
+      
+      // Get current stats to calculate averages and check high scores
+      const currentDoc = await getDoc(userRef);
+      const currentData = currentDoc.data() as UserProfile;
+      const currentStats = currentData.gameStats;
+      
+      const newTotalGames = currentStats.totalGames + 1;
+      const newTotalScore = currentStats.totalScore + gameStats.score;
+      const newTotalPlayTime = currentStats.totalPlayTime + gameStats.playTime;
+      
+      const updates = {
+        'gameStats.totalGames': newTotalGames,
+        'gameStats.totalScore': newTotalScore,
+        'gameStats.totalPlayTime': newTotalPlayTime,
+        'gameStats.highScore': Math.max(currentStats.highScore, gameStats.score),
+        'gameStats.highestLevel': Math.max(currentStats.highestLevel, gameStats.level),
+        'gameStats.averageGameTime': newTotalPlayTime / newTotalGames,
+        'gameStats.averageScore': newTotalScore / newTotalGames,
+        'gameStats.totalLinesCleared': currentStats.totalLinesCleared + gameStats.linesCleared,
+        'gameStats.lineClearStats.singles': currentStats.lineClearStats.singles + gameStats.lineClearStats.singles,
+        'gameStats.lineClearStats.doubles': currentStats.lineClearStats.doubles + gameStats.lineClearStats.doubles,
+        'gameStats.lineClearStats.triples': currentStats.lineClearStats.triples + gameStats.lineClearStats.triples,
+        'gameStats.lineClearStats.tetrises': currentStats.lineClearStats.tetrises + gameStats.lineClearStats.tetrises,
+        'gameStats.maxCombo': Math.max(currentStats.maxCombo, gameStats.maxCombo),
+        'gameStats.perfectClears': currentStats.perfectClears + gameStats.perfectClears,
+        'gameStats.tSpins': currentStats.tSpins + gameStats.tSpins,
+        'gameStats.lastGameDate': serverTimestamp(),
+      };
+      
+      await updateDoc(userRef, updates);
+      console.log('Game stats updated successfully');
+    } catch (error) {
+      console.error('Error updating game stats:', error);
+      throw error;
+    }
+  };
+
   const value = {
     currentUser,
     userProfile,
@@ -244,6 +309,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loginWithGoogle,
     logout,
     updateProfile,
+    updateGameStats,
     refreshProfile,
     loading
   };
