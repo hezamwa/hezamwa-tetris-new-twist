@@ -6,7 +6,8 @@ import {
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithRedirect,
+  getRedirectResult
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Timestamp, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -40,6 +41,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Handle Google redirect result
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          await handleGoogleUser(result.user);
+        }
+      } catch (error) {
+        console.error('Error handling redirect result:', error);
+      }
+    };
+
+    handleRedirectResult();
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
@@ -67,6 +82,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return unsubscribe;
   }, []);
+
+  const handleGoogleUser = async (user: User) => {
+    // Check if user profile exists
+    const profileDoc = await getDoc(doc(db, 'users', user.uid));
+    
+    if (!profileDoc.exists()) {
+      // Create new profile for Google users
+      const newProfile: UserProfile = {
+        uid: user.uid,
+        email: user.email!,
+        fullName: user.displayName || 'Player',
+        avatarUrl: user.photoURL || undefined,
+        registrationDate: serverTimestamp() as Timestamp,
+        lastLoginDate: serverTimestamp() as Timestamp,
+        gameStats: {
+          highScore: 0,
+          gameCount: 0,
+          highestLevel: 1,
+          totalScore: 0,
+          totalPlayTime: 0
+        }
+      };
+      await setDoc(doc(db, 'users', user.uid), newProfile);
+      setUserProfile(newProfile);
+    } else {
+      // Update last login date
+      await updateDoc(doc(db, 'users', user.uid), {
+        lastLoginDate: serverTimestamp()
+      });
+    }
+  };
 
   const refreshProfile = async () => {
     if (!currentUser) return;
@@ -112,36 +158,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    const { user } = await signInWithPopup(auth, provider);
-    
-    // Check if user profile exists
-    const profileDoc = await getDoc(doc(db, 'users', user.uid));
-    
-    if (!profileDoc.exists()) {
-      // Create new profile for Google users
-      const newProfile: UserProfile = {
-        uid: user.uid,
-        email: user.email!,
-        fullName: user.displayName || 'Player',
-        avatarUrl: user.photoURL || undefined,
-        registrationDate: serverTimestamp() as Timestamp,
-        lastLoginDate: serverTimestamp() as Timestamp,
-        gameStats: {
-          highScore: 0,
-          gameCount: 0,
-          highestLevel: 1,
-          totalScore: 0,
-          totalPlayTime: 0
-        }
-      };
-      await setDoc(doc(db, 'users', user.uid), newProfile);
-      setUserProfile(newProfile);
-    } else {
-      // Update last login date
-      await updateDoc(doc(db, 'users', user.uid), {
-        lastLoginDate: serverTimestamp()
-      });
-    }
+    // Use redirect instead of popup to avoid COOP policy issues
+    await signInWithRedirect(auth, provider);
   };
 
   const logout = () => {
