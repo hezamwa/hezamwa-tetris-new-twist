@@ -1,0 +1,11 @@
+{
+  "short_name": "Tetris New Twist",
+  "name": "Tetris New Twist - Modern Tetris Game",
+  "description": "A modern take on the classic Tetris game with competitive features and social elements",
+  "icons": [],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#4169e1",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary"
+} 
