@@ -4,14 +4,14 @@ import {
   Paper,
   Typography,
   Avatar,
-  Grid,
   Box,
   Button,
   IconButton,
   List,
   ListItem,
   ListItemText,
-  Divider
+  Divider,
+  Stack
 } from '@mui/material';
 import { PhotoCamera } from '@mui/icons-material';
 import { format } from 'date-fns';
@@ -77,8 +77,12 @@ export const Profile = () => {
   return (
     <Container maxWidth="md">
       <Paper elevation={3} sx={{ p: 4, mt: 4 }}>
-        <Grid container spacing={4}>
-          <Grid item xs={12} md={4} sx={{ textAlign: 'center' }}>
+        <Stack 
+          direction={{ xs: 'column', md: 'row' }} 
+          spacing={4}
+          alignItems={{ xs: 'center', md: 'flex-start' }}
+        >
+          <Box sx={{ textAlign: 'center', minWidth: 200 }}>
             <Box position="relative" display="inline-block">
               <Avatar
                 src={userProfile.avatarUrl}
@@ -114,8 +118,8 @@ export const Profile = () => {
             <Typography color="textSecondary" gutterBottom>
               {userProfile.email}
             </Typography>
-          </Grid>
-          <Grid item xs={12} md={8}>
+          </Box>
+          <Box sx={{ flex: 1 }}>
             <Typography variant="h6" gutterBottom>
               Account Information
             </Typography>
@@ -167,8 +171,8 @@ export const Profile = () => {
                 />
               </ListItem>
             </List>
-          </Grid>
-        </Grid>
+          </Box>
+        </Stack>
       </Paper>
     </Container>
   );

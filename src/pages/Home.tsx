@@ -4,10 +4,10 @@ import {
   Container,
   Typography,
   Button,
-  Grid,
   Box,
   Paper,
-  useTheme
+  useTheme,
+  Stack
 } from '@mui/material';
 import {
   SportsEsports,
@@ -57,8 +57,12 @@ export const Home = () => {
         }}
       >
         <Container maxWidth="md">
-          <Grid container spacing={4} alignItems="center">
-            <Grid item xs={12} md={6}>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={4}
+            alignItems="center"
+          >
+            <Box sx={{ flex: 1 }}>
               <Typography variant="h2" component="h1" gutterBottom>
                 Tetris New Twist
               </Typography>
@@ -86,8 +90,8 @@ export const Home = () => {
                   </Button>
                 )}
               </Box>
-            </Grid>
-            <Grid item xs={12} md={6}>
+            </Box>
+            <Box sx={{ flex: 1 }}>
               <Box
                 sx={{
                   height: 300,
@@ -100,8 +104,8 @@ export const Home = () => {
               >
                 <SportsEsports sx={{ fontSize: 120, opacity: 0.8 }} />
               </Box>
-            </Grid>
-          </Grid>
+            </Box>
+          </Stack>
         </Container>
       </Box>
 
@@ -116,42 +120,51 @@ export const Home = () => {
         >
           Features
         </Typography>
-        <Grid container spacing={4}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(4, 1fr)'
+            },
+            gap: 4
+          }}
+        >
           {features.map((feature, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <Paper
-                elevation={3}
+            <Paper
+              key={index}
+              elevation={3}
+              sx={{
+                p: 3,
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                transition: 'transform 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-4px)'
+                }
+              }}
+            >
+              <Box
                 sx={{
-                  p: 3,
-                  height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  textAlign: 'center',
-                  transition: 'transform 0.2s',
-                  '&:hover': {
-                    transform: 'translateY(-4px)'
-                  }
+                  color: 'primary.main',
+                  mb: 2
                 }}
               >
-                <Box
-                  sx={{
-                    color: 'primary.main',
-                    mb: 2
-                  }}
-                >
-                  {feature.icon}
-                </Box>
-                <Typography variant="h6" component="h3" gutterBottom>
-                  {feature.title}
-                </Typography>
-                <Typography color="text.secondary">
-                  {feature.description}
-                </Typography>
-              </Paper>
-            </Grid>
+                {feature.icon}
+              </Box>
+              <Typography variant="h6" component="h3" gutterBottom>
+                {feature.title}
+              </Typography>
+              <Typography color="text.secondary">
+                {feature.description}
+              </Typography>
+            </Paper>
           ))}
-        </Grid>
+        </Box>
       </Container>
 
       {/* Call to Action */}
