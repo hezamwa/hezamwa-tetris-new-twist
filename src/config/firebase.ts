@@ -1,7 +1,7 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import { initializeApp, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth } from 'firebase/auth';
+import { getFirestore, Firestore } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY || 'demo-api-key',
@@ -25,10 +25,10 @@ if (isUsingDemoConfig) {
   );
 }
 
-let app;
-let auth;
-let db;
-let storage;
+let app: FirebaseApp | null = null;
+let auth: Auth | null = null;
+let db: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 
 try {
   app = initializeApp(firebaseConfig);
@@ -37,10 +37,7 @@ try {
   storage = getStorage(app);
 } catch (error) {
   console.error('Firebase initialization error:', error);
-  // Create null exports so the app doesn't crash
-  auth = null as any;
-  db = null as any;
-  storage = null as any;
+  // Firebase services remain null if initialization fails
 }
 
 export { auth, db, storage }; 

@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
-  Paper,
   Typography,
+  Tabs,
+  Tab,
+  Box,
   Table,
   TableBody,
   TableCell,
@@ -10,11 +12,10 @@ import {
   TableHead,
   TableRow,
   Avatar,
-  Box,
-  Tabs,
-  Tab
+  Paper,
+  CircularProgress
 } from '@mui/material';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, Firestore } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { UserProfile } from '../types/user';
 
@@ -24,7 +25,7 @@ interface TabPanelProps {
   value: number;
 }
 
-const TabPanel = (props: TabPanelProps) => {
+function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
 
   return (
@@ -35,110 +36,160 @@ const TabPanel = (props: TabPanelProps) => {
       aria-labelledby={`leaderboard-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          {children}
+        </Box>
+      )}
     </div>
   );
-};
+}
 
 export const Leaderboard = () => {
-  const [tabValue, setTabValue] = useState(0);
+  const [value, setValue] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [highScores, setHighScores] = useState<UserProfile[]>([]);
   const [mostGames, setMostGames] = useState<UserProfile[]>([]);
   const [highestLevels, setHighestLevels] = useState<UserProfile[]>([]);
 
   useEffect(() => {
     const fetchLeaderboards = async () => {
-      const usersRef = collection(db, 'users');
-      
-      // Fetch high scores
-      const highScoresQuery = query(
-        usersRef,
-        orderBy('gameStats.highScore', 'desc'),
-        limit(10)
-      );
-      const highScoresSnapshot = await getDocs(highScoresQuery);
-      setHighScores(highScoresSnapshot.docs.map(doc => doc.data() as UserProfile));
+      if (!db) {
+        console.warn('Database not available - leaderboards disabled');
+        setLoading(false);
+        return;
+      }
 
-      // Fetch most games played
-      const mostGamesQuery = query(
-        usersRef,
-        orderBy('gameStats.gameCount', 'desc'),
-        limit(10)
-      );
-      const mostGamesSnapshot = await getDocs(mostGamesQuery);
-      setMostGames(mostGamesSnapshot.docs.map(doc => doc.data() as UserProfile));
+      try {
+        const usersRef = collection(db as Firestore, 'users');
 
-      // Fetch highest levels
-      const highestLevelsQuery = query(
-        usersRef,
-        orderBy('gameStats.highestLevel', 'desc'),
-        limit(10)
-      );
-      const highestLevelsSnapshot = await getDocs(highestLevelsQuery);
-      setHighestLevels(highestLevelsSnapshot.docs.map(doc => doc.data() as UserProfile));
+        // Fetch high scores
+        const highScoresQuery = query(
+          usersRef,
+          orderBy('gameStats.highScore', 'desc'),
+          limit(10)
+        );
+        const highScoresSnapshot = await getDocs(highScoresQuery);
+        setHighScores(highScoresSnapshot.docs.map(doc => doc.data() as UserProfile));
+
+        // Fetch most games played
+        const mostGamesQuery = query(
+          usersRef,
+          orderBy('gameStats.gameCount', 'desc'),
+          limit(10)
+        );
+        const mostGamesSnapshot = await getDocs(mostGamesQuery);
+        setMostGames(mostGamesSnapshot.docs.map(doc => doc.data() as UserProfile));
+
+        // Fetch highest levels
+        const highestLevelsQuery = query(
+          usersRef,
+          orderBy('gameStats.highestLevel', 'desc'),
+          limit(10)
+        );
+        const highestLevelsSnapshot = await getDocs(highestLevelsQuery);
+        setHighestLevels(highestLevelsSnapshot.docs.map(doc => doc.data() as UserProfile));
+
+      } catch (error) {
+        console.error('Error fetching leaderboards:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchLeaderboards();
   }, []);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    setValue(newValue);
   };
 
-  const renderLeaderboardTable = (data: UserProfile[], valueKey: keyof UserProfile['gameStats']) => (
-    <TableContainer>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Rank</TableCell>
-            <TableCell>Player</TableCell>
-            <TableCell align="right">Score</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {data.map((user, index) => (
-            <TableRow key={user.uid}>
-              <TableCell>{index + 1}</TableCell>
-              <TableCell>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Avatar src={user.avatarUrl} alt={user.fullName} />
-                  {user.fullName}
-                </Box>
-              </TableCell>
-              <TableCell align="right">{user.gameStats[valueKey]}</TableCell>
+  const renderLeaderboardTable = (data: UserProfile[], valueKey: keyof UserProfile['gameStats']) => {
+    if (!db) {
+      return (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="body1" color="text.secondary">
+            Leaderboards are not available in demo mode.
+            <br />
+            Configure Firebase to enable leaderboards.
+          </Typography>
+        </Box>
+      );
+    }
+
+    if (data.length === 0) {
+      return (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="body1" color="text.secondary">
+            No data available yet. Play some games to see leaderboards!
+          </Typography>
+        </Box>
+      );
+    }
+
+    return (
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Rank</TableCell>
+              <TableCell>Player</TableCell>
+              <TableCell align="right">Score</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
+          </TableHead>
+          <TableBody>
+            {data.map((user, index) => (
+              <TableRow key={user.uid}>
+                <TableCell>{index + 1}</TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar src={user.avatarUrl} alt={user.fullName} />
+                    {user.fullName}
+                  </Box>
+                </TableCell>
+                <TableCell align="right">{user.gameStats[valueKey]}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    );
+  };
+
+  if (loading) {
+    return (
+      <Container>
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <CircularProgress />
+        </Box>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="md">
-      <Paper elevation={3} sx={{ mt: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom sx={{ mt: 4 }}>
+        Leaderboards
+      </Typography>
+      
+      <Paper elevation={3}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs value={tabValue} onChange={handleTabChange} centered>
+          <Tabs value={value} onChange={handleChange} aria-label="leaderboard tabs">
             <Tab label="High Scores" />
             <Tab label="Most Games" />
             <Tab label="Highest Level" />
           </Tabs>
         </Box>
-        <TabPanel value={tabValue} index={0}>
-          <Typography variant="h6" gutterBottom>
-            Top 10 High Scores
-          </Typography>
+        
+        <TabPanel value={value} index={0}>
           {renderLeaderboardTable(highScores, 'highScore')}
         </TabPanel>
-        <TabPanel value={tabValue} index={1}>
-          <Typography variant="h6" gutterBottom>
-            Top 10 Most Games Played
-          </Typography>
+        
+        <TabPanel value={value} index={1}>
           {renderLeaderboardTable(mostGames, 'gameCount')}
         </TabPanel>
-        <TabPanel value={tabValue} index={2}>
-          <Typography variant="h6" gutterBottom>
-            Top 10 Highest Levels
-          </Typography>
+        
+        <TabPanel value={value} index={2}>
           {renderLeaderboardTable(highestLevels, 'highestLevel')}
         </TabPanel>
       </Paper>

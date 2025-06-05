@@ -6,9 +6,10 @@ import {
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  Auth
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Timestamp, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, serverTimestamp, Timestamp, onSnapshot, Firestore } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { UserProfile } from '../types/user';
 
@@ -55,13 +56,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      const unsubscribe = onAuthStateChanged(auth as Auth, async (user) => {
         clearTimeout(loadingTimeout); // Clear timeout since auth loaded
         setCurrentUser(user);
-        if (user) {
+        if (user && db) {
           try {
             // Set up real-time listener for user profile
-            const userDocRef = doc(db, 'users', user.uid);
+            const userDocRef = doc(db as Firestore, 'users', user.uid);
             const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
               if (doc.exists()) {
                 setUserProfile(doc.data() as UserProfile);
@@ -93,10 +94,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const refreshProfile = async () => {
-    if (!currentUser) return;
+    if (!currentUser || !db) return;
     
     try {
-      const profileDoc = await getDoc(doc(db, 'users', currentUser.uid));
+      const profileDoc = await getDoc(doc(db as Firestore, 'users', currentUser.uid));
       if (profileDoc.exists()) {
         setUserProfile(profileDoc.data() as UserProfile);
       }
@@ -108,7 +109,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signup = async (email: string, password: string, fullName: string) => {
     if (!auth || !db) throw new Error('Firebase not configured');
     
-    const { user } = await createUserWithEmailAndPassword(auth, email, password);
+    const { user } = await createUserWithEmailAndPassword(auth as Auth, email, password);
     const newProfile: UserProfile = {
       uid: user.uid,
       email,
@@ -123,16 +124,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         totalPlayTime: 0
       }
     };
-    await setDoc(doc(db, 'users', user.uid), newProfile);
+    await setDoc(doc(db as Firestore, 'users', user.uid), newProfile);
     setUserProfile(newProfile);
   };
 
   const login = async (email: string, password: string) => {
     if (!auth) throw new Error('Firebase not configured');
     
-    await signInWithEmailAndPassword(auth, email, password);
-    if (currentUser) {
-      await updateDoc(doc(db, 'users', currentUser.uid), {
+    await signInWithEmailAndPassword(auth as Auth, email, password);
+    if (currentUser && db) {
+      await updateDoc(doc(db as Firestore, 'users', currentUser.uid), {
         lastLoginDate: serverTimestamp()
       });
     }
@@ -142,10 +143,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!auth || !db) throw new Error('Firebase not configured');
     
     const provider = new GoogleAuthProvider();
-    const { user } = await signInWithPopup(auth, provider);
+    const { user } = await signInWithPopup(auth as Auth, provider);
     
     // Check if user profile exists
-    const profileDoc = await getDoc(doc(db, 'users', user.uid));
+    const profileDoc = await getDoc(doc(db as Firestore, 'users', user.uid));
     
     if (!profileDoc.exists()) {
       // Create new profile for Google users
@@ -164,11 +165,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           totalPlayTime: 0
         }
       };
-      await setDoc(doc(db, 'users', user.uid), newProfile);
+      await setDoc(doc(db as Firestore, 'users', user.uid), newProfile);
       setUserProfile(newProfile);
     } else {
       // Update last login date
-      await updateDoc(doc(db, 'users', user.uid), {
+      await updateDoc(doc(db as Firestore, 'users', user.uid), {
         lastLoginDate: serverTimestamp()
       });
     }
@@ -176,12 +177,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     if (!auth) throw new Error('Firebase not configured');
-    return signOut(auth);
+    return signOut(auth as Auth);
   };
 
   const updateProfile = async (data: Partial<UserProfile>) => {
     if (!currentUser || !db) throw new Error('Firebase not configured or no user logged in');
-    await updateDoc(doc(db, 'users', currentUser.uid), data);
+    await updateDoc(doc(db as Firestore, 'users', currentUser.uid), data);
     // Note: We don't need to manually update local state anymore
     // because the onSnapshot listener will handle it automatically
   };
