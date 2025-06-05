@@ -82,11 +82,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         registrationDate: serverTimestamp() as Timestamp,
         lastLoginDate: serverTimestamp() as Timestamp,
         gameStats: {
-          highScore: 0,
-          gameCount: 0,
-          highestLevel: 1,
+          totalGames: 0,
           totalScore: 0,
-          totalPlayTime: 0
+          totalPlayTime: 0,
+          highScore: 0,
+          highestLevel: 1,
+          averageGameTime: 0,
+          averageScore: 0,
+          piecesPerMinute: 0,
+          totalLinesCleared: 0,
+          lineClearStats: {
+            singles: 0,
+            doubles: 0,
+            triples: 0,
+            tetrises: 0,
+          },
+          maxCombo: 0,
+          perfectClears: 0,
+          tSpins: 0,
+          achievements: [],
+          modeStats: {
+            classic: { games: 0, bestScore: 0, totalPlayTime: 0 },
+            'time-attack': { games: 0, bestScore: 0, bestTime: 0, totalPlayTime: 0 },
+            survival: { games: 0, bestScore: 0, totalPlayTime: 0 },
+            marathon: { games: 0, bestScore: 0, totalPlayTime: 0 },
+          }
+        },
+        recentSessions: [],
+        weeklyStats: [],
+        monthlyStats: [],
+        preferences: {
+          defaultGameMode: 'classic' as const,
+          soundEnabled: true,
+          showGhost: true,
+          autoRepeat: true,
         }
       };
       await setDoc(doc(db, 'users', user.uid), newProfile);
@@ -121,11 +150,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       registrationDate: serverTimestamp() as Timestamp,
       lastLoginDate: serverTimestamp() as Timestamp,
       gameStats: {
-        highScore: 0,
-        gameCount: 0,
-        highestLevel: 1,
+        totalGames: 0,
         totalScore: 0,
-        totalPlayTime: 0
+        totalPlayTime: 0,
+        highScore: 0,
+        highestLevel: 1,
+        averageGameTime: 0,
+        averageScore: 0,
+        piecesPerMinute: 0,
+        totalLinesCleared: 0,
+        lineClearStats: {
+          singles: 0,
+          doubles: 0,
+          triples: 0,
+          tetrises: 0,
+        },
+        maxCombo: 0,
+        perfectClears: 0,
+        tSpins: 0,
+        achievements: [],
+        modeStats: {
+          classic: { games: 0, bestScore: 0, totalPlayTime: 0 },
+          'time-attack': { games: 0, bestScore: 0, bestTime: 0, totalPlayTime: 0 },
+          survival: { games: 0, bestScore: 0, totalPlayTime: 0 },
+          marathon: { games: 0, bestScore: 0, totalPlayTime: 0 },
+        }
+      },
+      recentSessions: [],
+      weeklyStats: [],
+      monthlyStats: [],
+      preferences: {
+        defaultGameMode: 'classic' as const,
+        soundEnabled: true,
+        showGhost: true,
+        autoRepeat: true,
       }
     };
     await setDoc(doc(db, 'users', user.uid), newProfile);

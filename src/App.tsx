@@ -7,6 +7,7 @@ import { Home } from './pages/Home';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Profile } from './pages/Profile';
+import { Analytics } from './pages/Analytics';
 import { Leaderboard } from './pages/Leaderboard';
 import Game from './components/Game';
 
@@ -40,6 +41,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/game" element={<Game />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route
                 path="/profile"

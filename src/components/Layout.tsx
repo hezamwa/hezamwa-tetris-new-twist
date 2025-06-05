@@ -19,6 +19,7 @@ import {
   Home,
   SportsEsports,
   Leaderboard,
+  Analytics,
   Person,
   Login,
   PersonAdd,
@@ -50,6 +51,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const menuItems = [
     { text: 'Home', icon: <Home />, path: '/' },
     { text: 'Play Game', icon: <SportsEsports />, path: '/game' },
+    { text: 'Analytics', icon: <Analytics />, path: '/analytics' },
     { text: 'Leaderboard', icon: <Leaderboard />, path: '/leaderboard' },
   ];
 

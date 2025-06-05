@@ -69,7 +69,7 @@ export const Leaderboard = () => {
         // Fetch most games played
         const mostGamesQuery = query(
           usersRef,
-          orderBy('gameStats.gameCount', 'desc'),
+          orderBy('gameStats.totalGames', 'desc'),
           limit(10)
         );
         const mostGamesSnapshot = await getDocs(mostGamesQuery);
@@ -168,7 +168,7 @@ export const Leaderboard = () => {
         </TabPanel>
         
         <TabPanel value={value} index={1}>
-          {renderLeaderboardTable(mostGames, 'gameCount')}
+          {renderLeaderboardTable(mostGames, 'totalGames')}
         </TabPanel>
         
         <TabPanel value={value} index={2}>

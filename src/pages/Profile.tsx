@@ -151,7 +151,7 @@ export const Profile = () => {
               <ListItem>
                 <ListItemText
                   primary="Games Played"
-                  secondary={userProfile.gameStats.gameCount}
+                  secondary={userProfile.gameStats.totalGames}
                 />
               </ListItem>
               <ListItem>

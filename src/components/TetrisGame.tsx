@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import { Toaster } from 'react-hot-toast';
 import { useGameLogic } from '../hooks/useGameLogic';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { DEFAULT_COLORS } from '../utils/constants';
+import { GameMode, Achievement } from '../types/types';
+import { ACHIEVEMENTS } from '../utils/constants';
+import { checkAchievements, formatTime } from '../utils/achievements';
+import GameModeSelector from './GameModeSelector';
+import StatsDisplay from './StatsDisplay';
+import AchievementPanel from './AchievementPanel';
 
 const GameContainer = styled.div`
   display: flex;
@@ -13,10 +18,31 @@ const GameContainer = styled.div`
   min-height: 100vh;
 `;
 
+const GameHeader = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 1400px;
+`;
+
+const GameTitle = styled.h1`
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 32px;
+  font-weight: 700;
+  text-align: center;
+`;
+
 const GameArea = styled.div`
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  width: 100%;
+  max-width: 1400px;
+  flex-wrap: wrap;
+  justify-content: center;
 `;
 
 const GameBoard = styled.div`
@@ -29,27 +55,82 @@ const GameBoard = styled.div`
   border-radius: 4px;
   margin-bottom: 20px;
   box-shadow: 0 0 20px rgba(65, 105, 225, 0.3);
+  position: relative;
 `;
 
-const SidePanel = styled.div`
+const LeftPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 280px;
+`;
+
+const RightPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 280px;
+`;
+
+const GameCenterArea = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+`;
+
+const PiecePreviewContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 12px;
+  padding: 16px;
   background: #fff;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  width: 200px;
 `;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const Controls = styled.div`
+const PreviewTitle = styled.h3`
+  margin: 0;
+  font-size: 16px;
+  color: #333;
+  text-align: center;
+`;
+
+const NextPiecePreview = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-bottom: 20px;
-  max-width: 400px;
-  width: 100%;
+  grid-template-columns: repeat(4, 20px);
+  grid-template-rows: repeat(4, 20px);
+  gap: 1px;
+  background: #333;
+  padding: 8px;
+  border-radius: 4px;
+  justify-self: center;
+`;
+
+const HoldPiecePreview = styled.div<{ disabled?: boolean }>`
+  display: grid;
+  grid-template-columns: repeat(4, 20px);
+  grid-template-rows: repeat(4, 20px);
+  gap: 1px;
+  background: #333;
+  padding: 8px;
+  border-radius: 4px;
+  justify-self: center;
+  opacity: ${props => props.disabled ? 0.5 : 1};
+`;
+
+const Cell = styled.div<{ color: string }>`
+  width: 30px;
+  height: 30px;
+  background: ${props => props.color || '#fff'};
+  border: ${props => props.color ? '1px solid rgba(0,0,0,0.2)' : '1px solid rgba(0,0,0,0.1)'};
+`;
+
+const PreviewCell = styled.div<{ color: string }>`
+  width: 20px;
+  height: 20px;
+  background: ${props => props.color || '#fff'};
+  border: ${props => props.color ? '1px solid rgba(0,0,0,0.2)' : '1px solid rgba(0,0,0,0.1)'};
 `;
 
 const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'warning' }>`
@@ -69,64 +150,18 @@ const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'warning' }>`
   }};
   color: white;
   cursor: pointer;
+  transition: all 0.2s ease;
+  
   &:hover {
     filter: brightness(0.9);
+    transform: translateY(-1px);
   }
+  
   &:disabled {
     background: #cccccc;
     cursor: not-allowed;
+    transform: none;
   }
-`;
-
-const SidePanelButtons = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 4px;
-`;
-
-const CompactButton = styled(Button)`
-  padding: 8px;
-  font-size: 14px;
-`;
-
-const NextPiecePreview = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 30px);
-  grid-template-rows: repeat(4, 30px);
-  gap: 1px;
-  background: #333;
-  padding: 8px;
-  border-radius: 4px;
-`;
-
-const Cell = styled.div<{ color: string }>`
-  width: 30px;
-  height: 30px;
-  background: ${props => props.color || '#fff'};
-  border: ${props => props.color ? '1px solid rgba(0,0,0,0.2)' : '1px solid rgba(0,0,0,0.1)'};
-`;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const ColorSelector = styled.div`
-  margin-bottom: 20px;
-`;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const ColorOption = styled.div<{ color: string; selected: boolean }>`
-  width: 30px;
-  height: 30px;
-  background: ${props => props.color};
-  border: 2px solid ${props => props.selected ? '#000' : 'transparent'};
-  display: inline-block;
-  margin: 5px;
-  cursor: pointer;
-`;
-
-const StatsDisplay = styled.div`
-  font-size: 16px;
-  line-height: 1.3;
-  margin: 4px 0;
 `;
 
 const ControlPanel = styled.div`
@@ -134,10 +169,15 @@ const ControlPanel = styled.div`
   grid-template-areas:
     ". up ."
     "left center right"
-    ". down .";
+    ". down ."
+    "hold space drop";
   grid-template-columns: repeat(3, 50px);
-  grid-template-rows: repeat(3, 50px);
+  grid-template-rows: repeat(4, 50px);
   gap: 4px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 `;
 
 const ControlButton = styled(Button)`
@@ -147,21 +187,64 @@ const ControlButton = styled(Button)`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  border-radius: 50%;
+  font-size: 18px;
+  border-radius: 8px;
   background: #2196F3;
   touch-action: manipulation;
 
   &:active {
     transform: scale(0.95);
   }
+
+  &.rotate { grid-area: up; }
+  &.left { grid-area: left; }
+  &.right { grid-area: right; }
+  &.down { grid-area: down; }
+  &.hold { grid-area: hold; font-size: 12px; }
+  &.space { grid-area: space; font-size: 12px; }
+  &.drop { grid-area: drop; font-size: 12px; }
 `;
 
-const GameControls = styled.div`
-  display: flex;
-  flex-direction: column;
+const GameOverlay = styled.div<{ visible: boolean }>`
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: ${props => props.visible ? 'flex' : 'none'};
   align-items: center;
-  margin-top: 12px;
+  justify-content: center;
+  border-radius: 4px;
+  z-index: 10;
+`;
+
+const OverlayContent = styled.div`
+  text-align: center;
+  color: white;
+  padding: 20px;
+`;
+
+const OverlayTitle = styled.h2`
+  margin: 0 0 16px 0;
+  font-size: 32px;
+`;
+
+const OverlayText = styled.p`
+  margin: 0 0 20px 0;
+  font-size: 18px;
+`;
+
+const ActionButtons = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+`;
+
+const CompactButton = styled(Button)`
+  padding: 8px 16px;
+  font-size: 14px;
 `;
 
 interface TetrisGameProps {
@@ -171,14 +254,22 @@ interface TetrisGameProps {
 
 const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
   const { gameState, actions } = useGameLogic();
-
-  // Track if game has started to call onGameStart only once per game
+  const [selectedMode, setSelectedMode] = useState<GameMode>('classic');
   const [gameStarted, setGameStarted] = useState(false);
-  const [previousGameState, setPreviousGameState] = useState(gameState);
+  const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
+  const [showAchievements, setShowAchievements] = useState(false);
 
+  // Initialize the game with first pieces
+  useEffect(() => {
+    if (!gameState.currentPiece && !gameState.isGameOver) {
+      actions.newGame(selectedMode);
+    }
+  }, []);
+
+  // Handle keyboard controls
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (gameState.isGameOver) return;
+      if (gameState.isGameOver || gameState.isPaused) return;
 
       switch (e.key) {
         case 'ArrowLeft':
@@ -188,12 +279,25 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
           actions.moveRight();
           break;
         case 'ArrowDown':
-          actions.moveDown();
+          actions.softDrop();
           break;
         case 'ArrowUp':
           actions.rotate();
           break;
+        case 'z':
+        case 'Z':
+          actions.rotateCounter();
+          break;
+        case 'c':
+        case 'C':
+          actions.hold();
+          break;
         case ' ':
+          e.preventDefault();
+          actions.hardDrop();
+          break;
+        case 'p':
+        case 'P':
           if (gameState.isPaused) {
             actions.resume();
           } else {
@@ -205,202 +309,239 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [actions, gameState.isGameOver, gameState.isPaused]);
+  }, [gameState.isGameOver, gameState.isPaused, actions]);
 
-  // Handle game start detection
+  // Check for achievements
   useEffect(() => {
-    if (!gameStarted && gameState.currentPiece && !gameState.isGameOver && !gameState.isPaused) {
+    if (gameState.currentPiece || gameState.isGameOver || gameState.isGameCompleted) {
+      const newAchievements = checkAchievements(gameState, achievements);
+      if (newAchievements.length > 0) {
+        setAchievements(current => {
+          const updated = [...current];
+          newAchievements.forEach(newAchievement => {
+            const index = updated.findIndex(a => a.id === newAchievement.id);
+            if (index >= 0) {
+              updated[index] = newAchievement;
+            }
+          });
+          return updated;
+        });
+      }
+    }
+  }, [gameState, achievements]);
+
+  // Game lifecycle callbacks
+  useEffect(() => {
+    if (gameState.currentPiece && !gameStarted) {
       setGameStarted(true);
       onGameStart?.();
     }
-  }, [gameState.currentPiece, gameState.isGameOver, gameState.isPaused, gameStarted, onGameStart]);
 
-  // Handle game end detection
-  useEffect(() => {
-    if (gameStarted && (gameState.isGameOver || gameState.isGameCompleted)) {
+    if ((gameState.isGameOver || gameState.isGameCompleted) && gameStarted) {
+      setGameStarted(false);
       onGameEnd?.(gameState.score, gameState.level);
-      setGameStarted(false);
     }
-  }, [gameState.isGameOver, gameState.isGameCompleted, gameState.score, gameState.level, gameStarted, onGameEnd]);
+  }, [gameState.isGameOver, gameState.isGameCompleted, gameState.currentPiece, gameStarted, onGameStart, onGameEnd]);
 
-  // Handle new game - reset game started flag
-  useEffect(() => {
-    if (previousGameState.isGameOver && !gameState.isGameOver && !gameState.isGameCompleted) {
-      setGameStarted(false);
-    }
-    setPreviousGameState(gameState);
-  }, [gameState, previousGameState]);
-
-  useEffect(() => {
-    if (gameState.isGameCompleted) {
-      const timer = setTimeout(() => {
-        actions.newGame();
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [gameState.isGameCompleted, actions]);
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleColorSelection = (color: string) => {
-    const currentColors = gameState.selectedColors;
-    if (currentColors.includes(color)) {
-      if (currentColors.length > 2) {
-        actions.updateColors(currentColors.filter(c => c !== color));
-      }
-    } else {
-      if (currentColors.length < 7) {
-        actions.updateColors([...currentColors, color]);
-      }
-    }
+  const handleModeSelect = (mode: GameMode) => {
+    setSelectedMode(mode);
+    actions.newGame(mode);
   };
 
-  const renderNextPiece = () => {
-    if (!gameState.nextPiece) return null;
-
-    const previewGrid = Array(4).fill(null).map(() => Array(4).fill(''));
-    const offsetX = Math.floor((4 - gameState.nextPiece.shape[0].length) / 2);
-    const offsetY = Math.floor((4 - gameState.nextPiece.shape.length) / 2);
-
-    gameState.nextPiece.shape.forEach((row, y) => {
-      row.forEach((cell, x) => {
-        if (cell !== 0) {
-          previewGrid[y + offsetY][x + offsetX] = gameState.nextPiece!.color;
-        }
-      });
-    });
-
-    return (
-      <NextPiecePreview>
-        {previewGrid.map((row, y) =>
-          row.map((cell, x) => (
-            <Cell key={`next-${x}-${y}`} color={cell} />
-          ))
-        )}
-      </NextPiecePreview>
-    );
-  };
-
-  // Create a display grid that includes both the fixed pieces and the current piece
-  const displayGrid = gameState.grid.map(row => [...row]);
-  if (gameState.currentPiece) {
-    const { shape, position, color } = gameState.currentPiece;
-    shape.forEach((row, y) => {
-      row.forEach((cell, x) => {
-        if (cell !== 0) {
-          const gridY = position.y + y;
-          const gridX = position.x + x;
-          if (gridY >= 0 && gridY < 20 && gridX >= 0 && gridX < 10) {
-            displayGrid[gridY][gridX] = color;
+  const renderGrid = () => {
+    const grid = gameState.grid.map(row => [...row]);
+    
+    // Add current piece to grid for display
+    if (gameState.currentPiece) {
+      gameState.currentPiece.shape.forEach((row, y) => {
+        row.forEach((cell, x) => {
+          if (cell !== 0) {
+            const gridY = gameState.currentPiece!.position.y + y;
+            const gridX = gameState.currentPiece!.position.x + x;
+            if (gridY >= 0 && gridY < 20 && gridX >= 0 && gridX < 10) {
+              grid[gridY][gridX] = gameState.currentPiece!.color;
+            }
           }
+        });
+      });
+    }
+
+    return grid.flat().map((color, index) => (
+      <Cell key={index} color={color} />
+    ));
+  };
+
+  const renderPreviewPiece = (piece: any, size = 4) => {
+    if (!piece) {
+      return Array(size * size).fill(null).map((_, index) => (
+        <PreviewCell key={index} color="" />
+      ));
+    }
+
+    const previewGrid = Array(size).fill(null).map(() => Array(size).fill(''));
+    piece.shape.forEach((row: any[], y: number) => {
+      row.forEach((cell: number, x: number) => {
+        if (cell !== 0 && y < size && x < size) {
+          previewGrid[y][x] = piece.color;
         }
       });
     });
-  }
+
+    return previewGrid.flat().map((color, index) => (
+      <PreviewCell key={index} color={color} />
+    ));
+  };
 
   return (
     <GameContainer>
+      <Toaster position="top-center" />
+      
+      <GameHeader>
+        <GameTitle>🎮 Enhanced Tetris</GameTitle>
+        <GameModeSelector 
+          selectedMode={selectedMode} 
+          onModeSelect={handleModeSelect} 
+        />
+      </GameHeader>
+
       <GameArea>
-        <GameBoard>
-          {displayGrid.map((row, y) =>
-            row.map((cell, x) => (
-              <Cell
-                key={`${x}-${y}`}
-                color={cell}
-              />
-            ))
-          )}
-        </GameBoard>
+        {/* Left Panel */}
+        <LeftPanel>
+          <PiecePreviewContainer>
+            <PreviewTitle>Hold (C)</PreviewTitle>
+            <HoldPiecePreview disabled={!gameState.canHold}>
+              {renderPreviewPiece(gameState.holdPiece)}
+            </HoldPiecePreview>
+          </PiecePreviewContainer>
 
-        <div>
-          <SidePanel>
-            <h2>Next Piece</h2>
-            {renderNextPiece()}
-            <StatsDisplay>
-              <div>Score: {gameState.score}/{gameState.targetScore}</div>
-              <div>Level: {gameState.level}</div>
-              <div>Games Won: {gameState.gamesCompleted}</div>
-            </StatsDisplay>
-            <Button
-              onClick={() => gameState.isGameOver ? actions.newGame() : gameState.isPaused ? actions.resume() : actions.pause()}
-            >
-              {gameState.isGameOver ? 'New Game' : gameState.isPaused ? 'Resume' : 'Pause'}
-            </Button>
-          </SidePanel>
+          <PiecePreviewContainer>
+            <PreviewTitle>Next Piece</PreviewTitle>
+            <NextPiecePreview>
+              {renderPreviewPiece(gameState.nextPiece)}
+            </NextPiecePreview>
+          </PiecePreviewContainer>
 
-          <SidePanelButtons>
-            <CompactButton 
-              variant="warning" 
-              onClick={actions.restartGame}
-              disabled={gameState.isGameOver && !gameState.isGameCompleted}
-            >
-              Restart
-            </CompactButton>
-            <CompactButton 
-              variant="secondary" 
-              onClick={actions.undoMove}
-              disabled={gameState.history.length === 0}
-            >
+          <AchievementPanel achievements={achievements} compact />
+        </LeftPanel>
+
+        {/* Center Game Area */}
+        <GameCenterArea>
+          <div style={{ position: 'relative' }}>
+            <GameBoard>
+              {renderGrid()}
+              
+              <GameOverlay visible={gameState.isGameOver || gameState.isGameCompleted || gameState.isPaused}>
+                <OverlayContent>
+                  {gameState.isPaused && (
+                    <>
+                      <OverlayTitle>⏸️ Paused</OverlayTitle>
+                      <OverlayText>Press P to resume</OverlayText>
+                      <ActionButtons>
+                        <Button onClick={actions.resume}>Resume</Button>
+                        <Button variant="secondary" onClick={actions.restartGame}>Restart</Button>
+                      </ActionButtons>
+                    </>
+                  )}
+                  
+                  {gameState.isGameCompleted && (
+                    <>
+                      <OverlayTitle>🎉 Level Complete!</OverlayTitle>
+                      <OverlayText>
+                        Score: {gameState.score.toLocaleString()}<br/>
+                        Time: {formatTime((Date.now() - gameState.performance.startTime.getTime()) / 1000)}
+                      </OverlayText>
+                      <ActionButtons>
+                        <Button onClick={() => actions.newGame(selectedMode)}>Next Level</Button>
+                        <Button variant="secondary" onClick={actions.restartGame}>Restart</Button>
+                      </ActionButtons>
+                    </>
+                  )}
+                  
+                  {gameState.isGameOver && !gameState.isGameCompleted && (
+                    <>
+                      <OverlayTitle>💀 Game Over</OverlayTitle>
+                      <OverlayText>
+                        Final Score: {gameState.score.toLocaleString()}<br/>
+                        Level Reached: {gameState.level}<br/>
+                        Time Played: {formatTime((Date.now() - gameState.performance.startTime.getTime()) / 1000)}
+                      </OverlayText>
+                      <ActionButtons>
+                        <Button onClick={() => actions.newGame(selectedMode)}>New Game</Button>
+                        <Button variant="secondary" onClick={actions.restartGame}>Restart</Button>
+                        <Button variant="warning" onClick={() => setShowAchievements(!showAchievements)}>
+                          Achievements
+                        </Button>
+                      </ActionButtons>
+                    </>
+                  )}
+                </OverlayContent>
+              </GameOverlay>
+            </GameBoard>
+          </div>
+
+          {/* Touch Controls */}
+          <ControlPanel>
+            <ControlButton className="rotate" onClick={actions.rotate}>↻</ControlButton>
+            <ControlButton className="left" onClick={actions.moveLeft}>←</ControlButton>
+            <ControlButton className="right" onClick={actions.moveRight}>→</ControlButton>
+            <ControlButton className="down" onClick={actions.softDrop}>↓</ControlButton>
+            <ControlButton className="hold" onClick={actions.hold}>Hold</ControlButton>
+            <ControlButton className="space" onClick={gameState.isPaused ? actions.resume : actions.pause}>
+              {gameState.isPaused ? 'Play' : 'Pause'}
+            </ControlButton>
+            <ControlButton className="drop" onClick={actions.hardDrop}>Drop</ControlButton>
+          </ControlPanel>
+
+          <ActionButtons>
+            <CompactButton onClick={actions.restartGame}>Restart</CompactButton>
+            <CompactButton onClick={actions.undoMove} disabled={gameState.history.length === 0}>
               Undo
             </CompactButton>
-          </SidePanelButtons>
+            <CompactButton 
+              variant="warning" 
+              onClick={() => setShowAchievements(!showAchievements)}
+            >
+              Achievements
+            </CompactButton>
+          </ActionButtons>
+        </GameCenterArea>
 
-          <GameControls>
-            <ControlPanel>
-              <ControlButton
-                style={{ gridArea: 'up' }}
-                onClick={actions.rotate}
-                disabled={gameState.isGameOver || gameState.isPaused}
-              >
-                ↻
-              </ControlButton>
-              <ControlButton
-                style={{ gridArea: 'left' }}
-                onClick={actions.moveLeft}
-                disabled={gameState.isGameOver || gameState.isPaused}
-              >
-                ←
-              </ControlButton>
-              <ControlButton
-                style={{ gridArea: 'right' }}
-                onClick={actions.moveRight}
-                disabled={gameState.isGameOver || gameState.isPaused}
-              >
-                →
-              </ControlButton>
-              <ControlButton
-                style={{ gridArea: 'down' }}
-                onClick={actions.moveDown}
-                disabled={gameState.isGameOver || gameState.isPaused}
-              >
-                ↓
-              </ControlButton>
-            </ControlPanel>
-          </GameControls>
-        </div>
+        {/* Right Panel */}
+        <RightPanel>
+          <StatsDisplay gameState={gameState} />
+        </RightPanel>
       </GameArea>
 
-      {gameState.isGameOver && (
-        <div>
-          <h2>Game Over!</h2>
-          <Button onClick={actions.newGame}>Play Again</Button>
-        </div>
-      )}
-
-      {gameState.isGameCompleted && (
-        <div style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          background: 'rgba(0, 0, 0, 0.8)',
-          color: '#fff',
-          padding: '20px',
-          borderRadius: '10px',
-          textAlign: 'center',
-          zIndex: 1000
+      {/* Full Achievement Panel */}
+      {showAchievements && (
+        <div style={{ 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          bottom: 0, 
+          background: 'rgba(0,0,0,0.8)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
         }}>
-          <h2>Level {gameState.level} Completed!</h2>
-          <p>Starting next level in 2 seconds...</p>
+          <div style={{ 
+            background: 'white', 
+            borderRadius: '8px', 
+            padding: '20px', 
+            maxWidth: '600px', 
+            maxHeight: '80vh', 
+            overflow: 'auto',
+            width: '100%'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ margin: 0 }}>🏆 All Achievements</h2>
+              <Button variant="secondary" onClick={() => setShowAchievements(false)}>Close</Button>
+            </div>
+            <AchievementPanel achievements={achievements} />
+          </div>
         </div>
       )}
     </GameContainer>

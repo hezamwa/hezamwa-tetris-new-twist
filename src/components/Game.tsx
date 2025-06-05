@@ -51,7 +51,7 @@ const Game = () => {
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       const updates: any = {
-        'gameStats.gameCount': increment(1),
+        'gameStats.totalGames': increment(1),
         'gameStats.totalScore': increment(score),
         'gameStats.totalPlayTime': increment(playTime)
       };
@@ -102,7 +102,7 @@ const Game = () => {
         </Typography>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
           <Typography>High Score: {userProfile.gameStats.highScore}</Typography>
-          <Typography>Games Played: {userProfile.gameStats.gameCount}</Typography>
+          <Typography>Games Played: {userProfile.gameStats.totalGames}</Typography>
           <Typography>Highest Level: {userProfile.gameStats.highestLevel}</Typography>
           <Typography>
             Total Time: {Math.floor(userProfile.gameStats.totalPlayTime / 3600)}h{' '}
