@@ -1,4 +1,4 @@
-import { useReducer, useCallback, useEffect, useState } from 'react';
+import { useReducer, useCallback, useEffect } from 'react';
 import { GameState, GameAction, Tetromino, TetrominoType, GameHistory } from '../types/types';
 import { GRID_WIDTH, GRID_HEIGHT, TETROMINOS, INITIAL_SPEED, DEFAULT_COLORS, POINTS } from '../utils/constants';
 

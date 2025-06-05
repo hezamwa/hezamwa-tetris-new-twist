@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useGameLogic } from '../hooks/useGameLogic';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
