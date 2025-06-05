@@ -40,28 +40,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
-      if (user) {
-        // Set up real-time listener for user profile
-        const userDocRef = doc(db, 'users', user.uid);
-        const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
-          if (doc.exists()) {
-            setUserProfile(doc.data() as UserProfile);
-          }
-        });
-
-        // Store the unsubscribe function for cleanup
-        return () => {
-          unsubscribeProfile();
-        };
-      } else {
-        setUserProfile(null);
-      }
+    // Set a timeout to ensure loading doesn't hang forever
+    const loadingTimeout = setTimeout(() => {
+      console.warn('Auth loading timeout - showing content anyway');
       setLoading(false);
-    });
+    }, 5000); // 5 second timeout
 
-    return unsubscribe;
+    // Check if Firebase auth is available
+    if (!auth) {
+      console.warn('Firebase auth not available - running in demo mode');
+      clearTimeout(loadingTimeout);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        clearTimeout(loadingTimeout); // Clear timeout since auth loaded
+        setCurrentUser(user);
+        if (user) {
+          try {
+            // Set up real-time listener for user profile
+            const userDocRef = doc(db, 'users', user.uid);
+            const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
+              if (doc.exists()) {
+                setUserProfile(doc.data() as UserProfile);
+              }
+            });
+
+            // Store the unsubscribe function for cleanup
+            return () => {
+              unsubscribeProfile();
+            };
+          } catch (profileError) {
+            console.error('Error setting up profile listener:', profileError);
+          }
+        } else {
+          setUserProfile(null);
+        }
+        setLoading(false);
+      });
+
+      return () => {
+        clearTimeout(loadingTimeout);
+        unsubscribe();
+      };
+    } catch (error) {
+      console.error('Firebase auth initialization error:', error);
+      clearTimeout(loadingTimeout);
+      setLoading(false); // Show content even if Firebase fails
+    }
   }, []);
 
   const refreshProfile = async () => {
@@ -78,6 +106,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signup = async (email: string, password: string, fullName: string) => {
+    if (!auth || !db) throw new Error('Firebase not configured');
+    
     const { user } = await createUserWithEmailAndPassword(auth, email, password);
     const newProfile: UserProfile = {
       uid: user.uid,
@@ -98,6 +128,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, password: string) => {
+    if (!auth) throw new Error('Firebase not configured');
+    
     await signInWithEmailAndPassword(auth, email, password);
     if (currentUser) {
       await updateDoc(doc(db, 'users', currentUser.uid), {
@@ -107,6 +139,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithGoogle = async () => {
+    if (!auth || !db) throw new Error('Firebase not configured');
+    
     const provider = new GoogleAuthProvider();
     const { user } = await signInWithPopup(auth, provider);
     
@@ -140,10 +174,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => signOut(auth);
+  const logout = () => {
+    if (!auth) throw new Error('Firebase not configured');
+    return signOut(auth);
+  };
 
   const updateProfile = async (data: Partial<UserProfile>) => {
-    if (!currentUser) throw new Error('No user logged in');
+    if (!currentUser || !db) throw new Error('Firebase not configured or no user logged in');
     await updateDoc(doc(db, 'users', currentUser.uid), data);
     // Note: We don't need to manually update local state anymore
     // because the onSnapshot listener will handle it automatically
