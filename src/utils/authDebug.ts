@@ -51,40 +51,72 @@ export const checkBrowserCompatibility = () => {
 };
 
 export const getAuthErrorMessage = (error: any): string => {
-  if (!error) return 'Unknown error occurred';
-  
-  const errorCode = error.code || '';
-  const errorMessage = error.message || '';
-  
-  // Firebase Auth error codes
-  switch (errorCode) {
-    case 'auth/popup-blocked':
-      return 'Popup was blocked by your browser. Please allow popups for this site and try again.';
-    case 'auth/popup-closed-by-user':
-      return 'Authentication was cancelled. Please try again.';
-    case 'auth/cancelled-popup-request':
-      return 'Another authentication request is already in progress.';
-    case 'auth/network-request-failed':
-      return 'Network error. Please check your internet connection and try again.';
-    case 'auth/too-many-requests':
-      return 'Too many failed attempts. Please wait a moment and try again.';
-    case 'auth/user-disabled':
-      return 'This account has been disabled. Please contact support.';
+  if (!error || !error.code) {
+    return 'An unexpected error occurred. Please try again.';
+  }
+
+  switch (error.code) {
+    // Email/Password errors
     case 'auth/user-not-found':
       return 'No account found with this email address.';
     case 'auth/wrong-password':
       return 'Incorrect password. Please try again.';
-    case 'auth/invalid-email':
-      return 'Please enter a valid email address.';
     case 'auth/email-already-in-use':
       return 'An account with this email already exists.';
     case 'auth/weak-password':
       return 'Password should be at least 6 characters long.';
-    default:
-      // Return the original message if it's user-friendly, otherwise a generic message
-      if (errorMessage && errorMessage.length < 100 && !errorMessage.includes('Error:')) {
-        return errorMessage;
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/user-disabled':
+      return 'This account has been disabled. Please contact support.';
+    case 'auth/too-many-requests':
+      return 'Too many failed login attempts. Please try again later.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your connection and try again.';
+    
+    // Google Auth errors
+    case 'auth/popup-blocked':
+      return 'Popup was blocked by your browser. Please allow popups and try again.';
+    case 'auth/popup-closed-by-user':
+      return 'Authentication was cancelled. Please try again.';
+    case 'auth/cancelled-popup-request':
+      return 'Another authentication request is in progress. Please wait and try again.';
+    
+    // Microsoft Auth specific errors
+    case 'auth/invalid-credential':
+      if (error.message && error.message.includes('microsoft.com')) {
+        return 'Microsoft authentication is not properly configured. Please contact support.';
       }
       return 'Authentication failed. Please try again.';
+    case 'auth/microsoft-oauth-error':
+      return 'Microsoft authentication failed. Please try again or use a different sign-in method.';
+    case 'auth/account-exists-with-different-credential':
+      return 'An account already exists with the same email address but different sign-in credentials. Please try signing in with your original method.';
+    
+    // Generic OAuth errors
+    case 'auth/oauth-error':
+      return 'Authentication service error. Please try again later.';
+    case 'auth/invalid-oauth-provider':
+      return 'Authentication provider configuration error. Please contact support.';
+    case 'auth/unauthorized-domain':
+      return 'This domain is not authorized for authentication.';
+    
+    // Firestore errors
+    case 'firestore/permission-denied':
+      return 'Permission denied. Please make sure you are signed in.';
+    case 'firestore/unavailable':
+      return 'Service is temporarily unavailable. Please try again.';
+    
+    default:
+      console.error('Unhandled auth error:', error);
+      // Check if it's a Microsoft-specific error based on message content
+      if (error.message && (
+        error.message.includes('AADSTS') || 
+        error.message.includes('microsoft.com') ||
+        error.message.includes('Invalid client secret')
+      )) {
+        return 'Microsoft authentication configuration error. Please contact support or try a different sign-in method.';
+      }
+      return 'Authentication failed. Please try again or contact support if the problem persists.';
   }
 }; 

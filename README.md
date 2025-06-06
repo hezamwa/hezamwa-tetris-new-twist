@@ -5,7 +5,7 @@ A modern take on the classic Tetris game with competitive features and social el
 ## Features
 
 - Modern Tetris gameplay with enhanced graphics
-- User authentication and profiles
+- User authentication and profiles (Email/Password, Google Auth & Microsoft Auth)
 - Real-time leaderboards
 - Game statistics tracking
 - Progressive difficulty levels
@@ -66,7 +66,60 @@ To enable user authentication and profile features:
 2. **Enable Authentication**
    - In your Firebase project, go to Authentication
    - Click "Get started"
-   - Enable Email/Password and Google sign-in methods
+   - Go to "Sign-in method" tab
+   - Enable **Email/Password** provider
+   - Enable **Google** provider:
+     - Click on Google
+     - Toggle "Enable"
+     - Add your project's authorized domains (usually `localhost` for development and your production domain)
+     - Download the configuration if needed
+   - Enable **Microsoft** provider:
+     - **Step 1: Get Firebase Auth Domain**
+       - In Firebase Console, go to Authentication > Settings > Authorized domains
+       - Copy your Firebase Auth domain (looks like: `yourproject.firebaseapp.com`)
+     
+     - **Step 2: Create Azure AD Application**
+       - Go to [Azure Portal](https://portal.azure.com/)
+       - Navigate to **"Azure Active Directory"** > **"App registrations"**
+       - Click **"New registration"**
+       - Enter application name (e.g., "Tetris Game")
+       - Under **"Supported account types"**, select **"Accounts in any organizational directory and personal Microsoft accounts (personal Microsoft accounts, e.g. Skype, Xbox)"**
+       - Under **"Redirect URI"**:
+         - Select **"Web"** from dropdown
+         - Enter: `https://yourproject.firebaseapp.com/__/auth/handler`
+         - Replace `yourproject` with your actual Firebase project ID
+       - Click **"Register"**
+     
+     - **Step 3: Configure Application**
+       - In your newly created app, go to **"Overview"**
+       - Copy the **"Application (client) ID"** - you'll need this for Firebase
+       - Copy the **"Directory (tenant) ID"** (optional, but recommended)
+       
+     - **Step 4: Create Client Secret**
+       - Go to **"Certificates & secrets"** in the left menu
+       - Click **"New client secret"**
+       - Add a description (e.g., "Firebase Auth Secret")
+       - Choose expiration (recommended: 24 months)
+       - Click **"Add"**
+       - **IMPORTANT**: Copy the **"Value"** (not the "Secret ID") immediately - it won't be shown again
+       
+     - **Step 5: Set API Permissions (Optional but Recommended)**
+       - Go to **"API permissions"**
+       - Click **"Add a permission"**
+       - Select **"Microsoft Graph"**
+       - Choose **"Delegated permissions"**
+       - Add: `User.Read`, `profile`, `email`, `openid`
+       - Click **"Add permissions"**
+       
+     - **Step 6: Configure Firebase**
+       - Back in Firebase Console, click on **"Microsoft"** provider
+       - Toggle **"Enable"**
+       - Paste the **Application (client) ID** from Step 3
+       - Paste the **client secret VALUE** from Step 4 (not the Secret ID!)
+       - Click **"Save"**
+       
+     - **Step 7: Add Authorized Domains**
+       - Add your domains (localhost for development, your production domain)
 
 3. **Create Firestore Database**
    - Go to Firestore Database
@@ -114,4 +167,24 @@ To enable user authentication and profile features:
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License.
+
+## Troubleshooting Microsoft Authentication
+
+If you encounter `AADSTS7000215: Invalid client secret` error:
+
+1. **Check you're using the secret VALUE, not the Secret ID**
+   - In Azure Portal, go to your app > Certificates & secrets
+   - Create a new client secret if the old one expired
+   - Copy the "Value" field (not the "Secret ID")
+   - Update this value in Firebase Console
+
+2. **Verify the Redirect URI**
+   - Must be exactly: `https://yourproject.firebaseapp.com/__/auth/handler`
+   - Replace `yourproject` with your actual Firebase project ID
+
+3. **Check Application Type**
+   - Should support "personal Microsoft accounts" if you want Outlook/Hotmail users
+
+4. **Verify Firebase Configuration**
+   - Application ID and Client Secret must match exactly with Azure AD 

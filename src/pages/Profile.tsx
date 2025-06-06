@@ -51,18 +51,33 @@ export const Profile = () => {
     }
   };
 
-  const formatDate = (date: Date | Timestamp) => {
+  const formatDate = (date: Date | Timestamp | undefined | null) => {
     try {
+      // Handle null or undefined
+      if (!date) {
+        return 'Not available';
+      }
+      
       // Handle Firestore Timestamp
       if (date instanceof Timestamp) {
         return format(date.toDate(), 'PPP');
       }
+      
       // Handle regular Date object
       if (date instanceof Date) {
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+          return 'Invalid date';
+        }
         return format(date, 'PPP');
       }
+      
       // Handle date string or timestamp number
-      return format(new Date(date), 'PPP');
+      const parsedDate = new Date(date);
+      if (isNaN(parsedDate.getTime())) {
+        return 'Invalid date';
+      }
+      return format(parsedDate, 'PPP');
     } catch (error) {
       console.error('Error formatting date:', error);
       return 'Invalid date';

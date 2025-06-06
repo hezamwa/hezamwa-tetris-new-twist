@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -7,9 +7,23 @@ import {
   TextField,
   Button,
   Box,
-  Alert
+  Alert,
+  Link,
+  Divider,
+  SvgIcon
 } from '@mui/material';
+import { Google as GoogleIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { getAuthErrorMessage } from '../utils/authDebug';
+
+// Custom Microsoft Icon Component
+const MicrosoftIcon = () => (
+  <SvgIcon>
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zM24 11.4H12.6V0H24v11.4z"/>
+    </svg>
+  </SvgIcon>
+);
 
 export const Register = () => {
   const [formData, setFormData] = useState({
@@ -21,7 +35,7 @@ export const Register = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { signup } = useAuth();
+  const { signup, loginWithGoogle, loginWithMicrosoft } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,8 +49,36 @@ export const Register = () => {
       setLoading(true);
       await signup(formData.email, formData.password, formData.fullName);
       navigate('/profile');
-    } catch (err) {
-      setError('Failed to create an account');
+    } catch (err: any) {
+      setError(getAuthErrorMessage(err));
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      setError('');
+      setLoading(true);
+      await loginWithGoogle();
+      navigate('/profile');
+    } catch (err: any) {
+      setError(getAuthErrorMessage(err));
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMicrosoftSignUp = async () => {
+    try {
+      setError('');
+      setLoading(true);
+      await loginWithMicrosoft();
+      navigate('/profile');
+    } catch (err: any) {
+      setError(getAuthErrorMessage(err));
       console.error(err);
     } finally {
       setLoading(false);
@@ -58,6 +100,42 @@ export const Register = () => {
           Register
         </Typography>
         {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        
+        <Box sx={{ mb: 3 }}>
+          <Button
+            variant="outlined"
+            color="primary"
+            fullWidth
+            size="large"
+            startIcon={<GoogleIcon />}
+            onClick={handleGoogleSignUp}
+            disabled={loading}
+            sx={{ mb: 2 }}
+          >
+            Sign up with Google
+          </Button>
+          
+          <Button
+            variant="outlined"
+            color="primary"
+            fullWidth
+            size="large"
+            startIcon={<MicrosoftIcon />}
+            onClick={handleMicrosoftSignUp}
+            disabled={loading}
+          >
+            Sign up with Microsoft
+          </Button>
+        </Box>
+
+        <Box sx={{ my: 3 }}>
+          <Divider>
+            <Typography variant="body2" color="text.secondary" sx={{ px: 2 }}>
+              OR
+            </Typography>
+          </Divider>
+        </Box>
+
         <Box component="form" onSubmit={handleSubmit}>
           <TextField
             fullWidth
@@ -109,6 +187,15 @@ export const Register = () => {
           >
             Register
           </Button>
+        </Box>
+
+        <Box sx={{ mt: 2, textAlign: 'center' }}>
+          <Typography variant="body2">
+            Already have an account?{' '}
+            <Link component={RouterLink} to="/login">
+              Login here
+            </Link>
+          </Typography>
         </Box>
       </Paper>
     </Container>
