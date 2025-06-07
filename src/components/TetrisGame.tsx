@@ -8,6 +8,7 @@ import { checkAchievements, formatTime } from '../utils/achievements';
 import GameModeSelector from './GameModeSelector';
 import StatsDisplay from './StatsDisplay';
 import AchievementPanel from './AchievementPanel';
+import { Button } from './ui/button';
 
 const GameContainer = styled.div`
   display: flex;
@@ -133,78 +134,6 @@ const PreviewCell = styled.div<{ color: string }>`
   border: ${props => props.color ? '1px solid rgba(0,0,0,0.2)' : '1px solid rgba(0,0,0,0.1)'};
 `;
 
-const Button = styled.button<{ variant?: 'primary' | 'secondary' | 'warning' }>`
-  padding: 10px 20px;
-  font-size: 16px;
-  border: none;
-  border-radius: 5px;
-  background: ${props => {
-    switch (props.variant) {
-      case 'warning':
-        return '#ff9800';
-      case 'secondary':
-        return '#2196F3';
-      default:
-        return '#4CAF50';
-    }
-  }};
-  color: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    filter: brightness(0.9);
-    transform: translateY(-1px);
-  }
-  
-  &:disabled {
-    background: #cccccc;
-    cursor: not-allowed;
-    transform: none;
-  }
-`;
-
-const ControlPanel = styled.div`
-  display: grid;
-  grid-template-areas:
-    ". up ."
-    "left center right"
-    ". down ."
-    "hold space drop";
-  grid-template-columns: repeat(3, 50px);
-  grid-template-rows: repeat(4, 50px);
-  gap: 4px;
-  padding: 16px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-`;
-
-const ControlButton = styled(Button)`
-  width: 50px;
-  height: 50px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  border-radius: 8px;
-  background: #2196F3;
-  touch-action: manipulation;
-
-  &:active {
-    transform: scale(0.95);
-  }
-
-  &.rotate { grid-area: up; }
-  &.left { grid-area: left; }
-  &.right { grid-area: right; }
-  &.down { grid-area: down; }
-  &.hold { grid-area: hold; font-size: 12px; }
-  &.space { grid-area: space; font-size: 12px; }
-  &.drop { grid-area: drop; font-size: 12px; }
-`;
-
 const GameOverlay = styled.div<{ visible: boolean }>`
   position: absolute;
   top: 0;
@@ -215,36 +144,27 @@ const GameOverlay = styled.div<{ visible: boolean }>`
   display: ${props => props.visible ? 'flex' : 'none'};
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
   z-index: 10;
 `;
 
 const OverlayContent = styled.div`
-  text-align: center;
-  color: white;
+  background: white;
   padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 300px;
 `;
 
 const OverlayTitle = styled.h2`
-  margin: 0 0 16px 0;
-  font-size: 32px;
+  margin: 0 0 10px 0;
+  font-size: 24px;
+  color: #333;
 `;
 
 const OverlayText = styled.p`
   margin: 0 0 20px 0;
-  font-size: 18px;
-`;
-
-const ActionButtons = styled.div`
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-`;
-
-const CompactButton = styled(Button)`
-  padding: 8px 16px;
-  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
 `;
 
 interface TetrisGameProps {
@@ -256,7 +176,7 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
   const { gameState, actions } = useGameLogic();
   const [selectedMode, setSelectedMode] = useState<GameMode>('classic');
   const [gameStarted, setGameStarted] = useState(false);
-  const [achievements, setAchievements] = useState<Achievement[]>(ACHIEVEMENTS);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [showAchievements, setShowAchievements] = useState(false);
 
   // Initialize the game with first pieces
@@ -314,7 +234,7 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
   // Check for achievements
   useEffect(() => {
     if (gameState.currentPiece || gameState.isGameOver || gameState.isGameCompleted) {
-      const newAchievements = checkAchievements(gameState, achievements);
+      const newAchievements = checkAchievements(gameState, ACHIEVEMENTS);
       if (newAchievements.length > 0) {
         setAchievements(current => {
           const updated = [...current];
@@ -328,7 +248,7 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
         });
       }
     }
-  }, [gameState, achievements]);
+  }, [gameState, ACHIEVEMENTS]);
 
   // Game lifecycle callbacks
   useEffect(() => {
@@ -436,10 +356,10 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
                     <>
                       <OverlayTitle>⏸️ Paused</OverlayTitle>
                       <OverlayText>Press P to resume</OverlayText>
-                      <ActionButtons>
+                      <div className="flex gap-2 justify-center">
                         <Button onClick={actions.resume}>Resume</Button>
                         <Button variant="secondary" onClick={actions.restartGame}>Restart</Button>
-                      </ActionButtons>
+                      </div>
                     </>
                   )}
                   
@@ -450,10 +370,10 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
                         Score: {gameState.score.toLocaleString()}<br/>
                         Time: {formatTime((Date.now() - gameState.performance.startTime.getTime()) / 1000)}
                       </OverlayText>
-                      <ActionButtons>
+                      <div className="flex gap-2 justify-center">
                         <Button onClick={() => actions.newGame(selectedMode)}>Next Level</Button>
                         <Button variant="secondary" onClick={actions.restartGame}>Restart</Button>
-                      </ActionButtons>
+                      </div>
                     </>
                   )}
                   
@@ -465,13 +385,13 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
                         Level Reached: {gameState.level}<br/>
                         Time Played: {formatTime((Date.now() - gameState.performance.startTime.getTime()) / 1000)}
                       </OverlayText>
-                      <ActionButtons>
+                      <div className="flex gap-2 justify-center flex-wrap">
                         <Button onClick={() => actions.newGame(selectedMode)}>New Game</Button>
                         <Button variant="secondary" onClick={actions.restartGame}>Restart</Button>
-                        <Button variant="warning" onClick={() => setShowAchievements(!showAchievements)}>
+                        <Button variant="destructive" onClick={() => setShowAchievements(!showAchievements)}>
                           Achievements
                         </Button>
-                      </ActionButtons>
+                      </div>
                     </>
                   )}
                 </OverlayContent>
@@ -480,30 +400,85 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
           </div>
 
           {/* Touch Controls */}
-          <ControlPanel>
-            <ControlButton className="rotate" onClick={actions.rotate}>↻</ControlButton>
-            <ControlButton className="left" onClick={actions.moveLeft}>←</ControlButton>
-            <ControlButton className="right" onClick={actions.moveRight}>→</ControlButton>
-            <ControlButton className="down" onClick={actions.softDrop}>↓</ControlButton>
-            <ControlButton className="hold" onClick={actions.hold}>Hold</ControlButton>
-            <ControlButton className="space" onClick={gameState.isPaused ? actions.resume : actions.pause}>
+          <div className="grid grid-cols-3 grid-rows-4 gap-1 p-4 bg-white rounded-lg shadow-md" style={{
+            gridTemplateAreas: `". up ." "left center right" ". down ." "hold space drop"`
+          }}>
+            <Button 
+              size="sm" 
+              className="w-12 h-12 text-lg"
+              style={{ gridArea: 'up' }}
+              onClick={actions.rotate}
+            >
+              ↻
+            </Button>
+            <Button 
+              size="sm" 
+              className="w-12 h-12 text-lg"
+              style={{ gridArea: 'left' }}
+              onClick={actions.moveLeft}
+            >
+              ←
+            </Button>
+            <Button 
+              size="sm" 
+              className="w-12 h-12 text-lg"
+              style={{ gridArea: 'right' }}
+              onClick={actions.moveRight}
+            >
+              →
+            </Button>
+            <Button 
+              size="sm" 
+              className="w-12 h-12 text-lg"
+              style={{ gridArea: 'down' }}
+              onClick={actions.softDrop}
+            >
+              ↓
+            </Button>
+            <Button 
+              size="sm" 
+              className="w-12 h-12 text-xs"
+              style={{ gridArea: 'hold' }}
+              onClick={actions.hold}
+            >
+              Hold
+            </Button>
+            <Button 
+              size="sm" 
+              className="w-12 h-12 text-xs"
+              style={{ gridArea: 'space' }}
+              onClick={gameState.isPaused ? actions.resume : actions.pause}
+            >
               {gameState.isPaused ? 'Play' : 'Pause'}
-            </ControlButton>
-            <ControlButton className="drop" onClick={actions.hardDrop}>Drop</ControlButton>
-          </ControlPanel>
+            </Button>
+            <Button 
+              size="sm" 
+              className="w-12 h-12 text-xs"
+              style={{ gridArea: 'drop' }}
+              onClick={actions.hardDrop}
+            >
+              Drop
+            </Button>
+          </div>
 
-          <ActionButtons>
-            <CompactButton onClick={actions.restartGame}>Restart</CompactButton>
-            <CompactButton onClick={actions.undoMove} disabled={gameState.history.length === 0}>
+          <div className="flex gap-2 justify-center">
+            <Button size="sm" onClick={actions.restartGame}>Restart</Button>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={actions.undoMove} 
+              disabled={gameState.history.length === 0}
+            >
               Undo
-            </CompactButton>
-            <CompactButton 
-              variant="warning" 
+            </Button>
+            <Button 
+              size="sm" 
+              variant="destructive" 
               onClick={() => setShowAchievements(!showAchievements)}
             >
               Achievements
-            </CompactButton>
-          </ActionButtons>
+            </Button>
+          </div>
         </GameCenterArea>
 
         {/* Right Panel */}
@@ -514,30 +489,10 @@ const TetrisGame: React.FC<TetrisGameProps> = ({ onGameStart, onGameEnd }) => {
 
       {/* Full Achievement Panel */}
       {showAchievements && (
-        <div style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
-          background: 'rgba(0,0,0,0.8)', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div style={{ 
-            background: 'white', 
-            borderRadius: '8px', 
-            padding: '20px', 
-            maxWidth: '600px', 
-            maxHeight: '80vh', 
-            overflow: 'auto',
-            width: '100%'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h2 style={{ margin: 0 }}>🏆 All Achievements</h2>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-5">
+          <div className="bg-white rounded-lg p-5 max-w-2xl max-h-[80vh] overflow-auto w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold m-0">🏆 All Achievements</h2>
               <Button variant="secondary" onClick={() => setShowAchievements(false)}>Close</Button>
             </div>
             <AchievementPanel achievements={achievements} />

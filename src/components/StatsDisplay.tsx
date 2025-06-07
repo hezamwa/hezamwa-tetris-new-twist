@@ -1,126 +1,8 @@
 import React from 'react';
-import styled from 'styled-components';
 import { GameState } from '../types/types';
-import { calculatePiecesPerMinute, calculateLinesPerMinute, calculateEfficiency, formatTime, getLineClearTypeName, calculateGrade } from '../utils/achievements';
-
-const StatsContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  min-width: 280px;
-`;
-
-const StatSection = styled.div`
-  background: white;
-  padding: 12px;
-  border-radius: 6px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-`;
-
-const SectionTitle = styled.h3`
-  margin: 0 0 8px 0;
-  color: #333;
-  font-size: 16px;
-  font-weight: 600;
-`;
-
-const StatItem = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 4px 0;
-  font-size: 14px;
-`;
-
-const StatLabel = styled.span`
-  color: #666;
-`;
-
-const StatValue = styled.span<{ highlight?: boolean }>`
-  font-weight: 600;
-  color: ${props => props.highlight ? '#4CAF50' : '#333'};
-`;
-
-const ProgressBar = styled.div`
-  width: 100%;
-  height: 8px;
-  background: #e0e0e0;
-  border-radius: 4px;
-  margin: 4px 0;
-  overflow: hidden;
-`;
-
-const ProgressFill = styled.div<{ percentage: number; color?: string }>`
-  height: 100%;
-  width: ${props => props.percentage}%;
-  background: ${props => props.color || '#4CAF50'};
-  transition: width 0.3s ease;
-`;
-
-const ComboIndicator = styled.div<{ combo: number }>`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  background: ${props => props.combo > 0 ? '#ff9800' : '#f5f5f5'};
-  color: ${props => props.combo > 0 ? 'white' : '#666'};
-  border-radius: 4px;
-  font-weight: 600;
-  animation: ${props => props.combo > 0 ? 'pulse 0.5s ease-in-out' : 'none'};
-
-  @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-  }
-`;
-
-const LineClearGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-top: 8px;
-`;
-
-const LineClearItem = styled.div`
-  text-align: center;
-  padding: 8px 4px;
-  background: #f0f0f0;
-  border-radius: 4px;
-`;
-
-const LineClearLabel = styled.div`
-  font-size: 12px;
-  color: #666;
-  margin-bottom: 4px;
-`;
-
-const LineClearCount = styled.div`
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-`;
-
-const GradeDisplay = styled.div<{ grade: string }>`
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 14px;
-  background: ${props => {
-    switch (props.grade[0]) {
-      case 'S': return '#4CAF50';
-      case 'A': return '#8BC34A';
-      case 'B': return '#CDDC39';
-      case 'C': return '#FFC107';
-      case 'D': return '#FF9800';
-      default: return '#F44336';
-    }
-  }};
-  color: white;
-`;
+import { calculatePiecesPerMinute, calculateLinesPerMinute, calculateEfficiency, formatTime, calculateGrade } from '../utils/achievements';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Badge } from './ui/badge';
 
 interface StatsDisplayProps {
   gameState: GameState;
@@ -133,175 +15,230 @@ const StatsDisplay: React.FC<StatsDisplayProps> = ({ gameState }) => {
   const efficiency = calculateEfficiency(gameState.score, gameState.performance);
   const grade = calculateGrade(gameState.lineClearStats);
 
+  const getGradeColor = (grade: string) => {
+    switch (grade[0]) {
+      case 'S': return 'bg-green-500';
+      case 'A': return 'bg-green-400';
+      case 'B': return 'bg-yellow-400';
+      case 'C': return 'bg-orange-400';
+      case 'D': return 'bg-orange-500';
+      default: return 'bg-red-500';
+    }
+  };
+
   const renderGameModeInfo = () => {
     switch (gameState.gameMode) {
       case 'time-attack':
         return (
-          <StatSection>
-            <SectionTitle>⏱️ Time Attack</SectionTitle>
-            <StatItem>
-              <StatLabel>Time Remaining:</StatLabel>
-              <StatValue highlight={gameState.timeRemaining! < 30}>
-                {formatTime(gameState.timeRemaining || 0)}
-              </StatValue>
-            </StatItem>
-            <ProgressBar>
-              <ProgressFill 
-                percentage={(gameState.timeRemaining || 0) / 120 * 100} 
-                color={gameState.timeRemaining! < 30 ? '#f44336' : '#4CAF50'}
-              />
-            </ProgressBar>
-          </StatSection>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">⏱️ Time Attack</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Time Remaining:</span>
+                <span className={`font-semibold ${gameState.timeRemaining! < 30 ? 'text-red-500' : 'text-green-500'}`}>
+                  {formatTime(gameState.timeRemaining || 0)}
+                </span>
+              </div>
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className={`h-full transition-all duration-300 ${
+                    gameState.timeRemaining! < 30 ? 'bg-red-500' : 'bg-green-500'
+                  }`}
+                  style={{ width: `${(gameState.timeRemaining || 0) / 120 * 100}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
         );
       
       case 'survival':
         return (
-          <StatSection>
-            <SectionTitle>🛡️ Survival</SectionTitle>
-            <StatItem>
-              <StatLabel>Survival Time:</StatLabel>
-              <StatValue highlight>{formatTime(playTime)}</StatValue>
-            </StatItem>
-            <StatItem>
-              <StatLabel>Survival Level:</StatLabel>
-              <StatValue>{gameState.survivalLevel}</StatValue>
-            </StatItem>
-          </StatSection>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">🛡️ Survival</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Survival Time:</span>
+                <span className="font-semibold text-green-500">{formatTime(playTime)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Survival Level:</span>
+                <span className="font-semibold">{gameState.survivalLevel}</span>
+              </div>
+            </CardContent>
+          </Card>
         );
       
       case 'marathon':
         return (
-          <StatSection>
-            <SectionTitle>🏃 Marathon</SectionTitle>
-            <StatItem>
-              <StatLabel>Progress:</StatLabel>
-              <StatValue>
-                {gameState.score.toLocaleString()} / {gameState.targetScore.toLocaleString()}
-              </StatValue>
-            </StatItem>
-            <ProgressBar>
-              <ProgressFill percentage={(gameState.score / gameState.targetScore) * 100} />
-            </ProgressBar>
-          </StatSection>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">🏃 Marathon</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Progress:</span>
+                <span className="font-semibold">
+                  {gameState.score.toLocaleString()} / {gameState.targetScore.toLocaleString()}
+                </span>
+              </div>
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-green-500 transition-all duration-300"
+                  style={{ width: `${(gameState.score / gameState.targetScore) * 100}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
         );
       
       default:
         return (
-          <StatSection>
-            <SectionTitle>🎮 Classic</SectionTitle>
-            <StatItem>
-              <StatLabel>Progress:</StatLabel>
-              <StatValue>
-                {gameState.score.toLocaleString()} / {gameState.targetScore.toLocaleString()}
-              </StatValue>
-            </StatItem>
-            <ProgressBar>
-              <ProgressFill percentage={(gameState.score / gameState.targetScore) * 100} />
-            </ProgressBar>
-          </StatSection>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">🎮 Classic</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Progress:</span>
+                <span className="font-semibold">
+                  {gameState.score.toLocaleString()} / {gameState.targetScore.toLocaleString()}
+                </span>
+              </div>
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-green-500 transition-all duration-300"
+                  style={{ width: `${(gameState.score / gameState.targetScore) * 100}%` }}
+                />
+              </div>
+            </CardContent>
+          </Card>
         );
     }
   };
 
   return (
-    <StatsContainer>
+    <div className="flex flex-col gap-4 p-4 bg-muted/30 rounded-lg min-w-72">
       {/* Basic Game Stats */}
-      <StatSection>
-        <SectionTitle>📊 Game Stats</SectionTitle>
-        <StatItem>
-          <StatLabel>Score:</StatLabel>
-          <StatValue highlight>{gameState.score.toLocaleString()}</StatValue>
-        </StatItem>
-        <StatItem>
-          <StatLabel>Level:</StatLabel>
-          <StatValue>{gameState.level}</StatValue>
-        </StatItem>
-        <StatItem>
-          <StatLabel>Lines Cleared:</StatLabel>
-          <StatValue>{gameState.performance.linesCleared}</StatValue>
-        </StatItem>
-        <StatItem>
-          <StatLabel>Grade:</StatLabel>
-          <GradeDisplay grade={grade}>{grade}</GradeDisplay>
-        </StatItem>
-      </StatSection>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">📊 Game Stats</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Score:</span>
+            <span className="font-semibold text-green-500">{gameState.score.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Level:</span>
+            <span className="font-semibold">{gameState.level}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Lines Cleared:</span>
+            <span className="font-semibold">{gameState.performance.linesCleared}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Grade:</span>
+            <Badge className={`${getGradeColor(grade)} text-white border-0`}>
+              {grade}
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Game Mode Specific Info */}
       {renderGameModeInfo()}
 
       {/* Current Combo */}
       {gameState.combo > 0 && (
-        <ComboIndicator combo={gameState.combo}>
+        <div className="flex items-center gap-2 p-3 bg-orange-500 text-white rounded-md font-semibold animate-pulse">
           <span>🔥 COMBO x{gameState.combo}</span>
           {gameState.backToBack && <span>⚡ B2B</span>}
-        </ComboIndicator>
+        </div>
       )}
 
       {/* Performance Analytics */}
-      <StatSection>
-        <SectionTitle>📈 Performance</SectionTitle>
-        <StatItem>
-          <StatLabel>Play Time:</StatLabel>
-          <StatValue>{formatTime(playTime)}</StatValue>
-        </StatItem>
-        <StatItem>
-          <StatLabel>Pieces/Min:</StatLabel>
-          <StatValue highlight={ppm >= 60}>{ppm.toFixed(1)}</StatValue>
-        </StatItem>
-        <StatItem>
-          <StatLabel>Lines/Min:</StatLabel>
-          <StatValue>{lpm.toFixed(1)}</StatValue>
-        </StatItem>
-        <StatItem>
-          <StatLabel>Score/Min:</StatLabel>
-          <StatValue>{efficiency.toFixed(0)}</StatValue>
-        </StatItem>
-        <StatItem>
-          <StatLabel>Max Combo:</StatLabel>
-          <StatValue>{gameState.performance.maxCombo}</StatValue>
-        </StatItem>
-      </StatSection>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">📈 Performance</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Play Time:</span>
+            <span className="font-semibold">{formatTime(playTime)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Pieces/Min:</span>
+            <span className={`font-semibold ${ppm >= 60 ? 'text-green-500' : ''}`}>
+              {ppm.toFixed(1)}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Lines/Min:</span>
+            <span className="font-semibold">{lpm.toFixed(1)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Score/Min:</span>
+            <span className="font-semibold">{efficiency.toFixed(0)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Max Combo:</span>
+            <span className="font-semibold">{gameState.performance.maxCombo}</span>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Line Clear Statistics */}
-      <StatSection>
-        <SectionTitle>🎯 Line Clears</SectionTitle>
-        <LineClearGrid>
-          <LineClearItem>
-            <LineClearLabel>Singles</LineClearLabel>
-            <LineClearCount>{gameState.lineClearStats.singles}</LineClearCount>
-          </LineClearItem>
-          <LineClearItem>
-            <LineClearLabel>Doubles</LineClearLabel>
-            <LineClearCount>{gameState.lineClearStats.doubles}</LineClearCount>
-          </LineClearItem>
-          <LineClearItem>
-            <LineClearLabel>Triples</LineClearLabel>
-            <LineClearCount>{gameState.lineClearStats.triples}</LineClearCount>
-          </LineClearItem>
-          <LineClearItem>
-            <LineClearLabel>Tetrises</LineClearLabel>
-            <LineClearCount>{gameState.lineClearStats.tetrises}</LineClearCount>
-          </LineClearItem>
-        </LineClearGrid>
-      </StatSection>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">🎯 Line Clears</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="text-center p-2 bg-muted rounded">
+              <div className="text-xs text-muted-foreground mb-1">Singles</div>
+              <div className="font-semibold">{gameState.lineClearStats.singles}</div>
+            </div>
+            <div className="text-center p-2 bg-muted rounded">
+              <div className="text-xs text-muted-foreground mb-1">Doubles</div>
+              <div className="font-semibold">{gameState.lineClearStats.doubles}</div>
+            </div>
+            <div className="text-center p-2 bg-muted rounded">
+              <div className="text-xs text-muted-foreground mb-1">Triples</div>
+              <div className="font-semibold">{gameState.lineClearStats.triples}</div>
+            </div>
+            <div className="text-center p-2 bg-muted rounded">
+              <div className="text-xs text-muted-foreground mb-1">Tetrises</div>
+              <div className="font-semibold">{gameState.lineClearStats.tetrises}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Special Achievements */}
-      <StatSection>
-        <SectionTitle>✨ Special</SectionTitle>
-        <StatItem>
-          <StatLabel>T-Spins:</StatLabel>
-          <StatValue>{gameState.performance.tSpins}</StatValue>
-        </StatItem>
-        <StatItem>
-          <StatLabel>Perfect Clears:</StatLabel>
-          <StatValue>{gameState.performance.perfectClears}</StatValue>
-        </StatItem>
-        <StatItem>
-          <StatLabel>Hold Used:</StatLabel>
-          <StatValue>{gameState.performance.holdUsed}</StatValue>
-        </StatItem>
-      </StatSection>
-    </StatsContainer>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">✨ Special</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">T-Spins:</span>
+            <span className="font-semibold">{gameState.performance.tSpins}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Perfect Clears:</span>
+            <span className="font-semibold">{gameState.performance.perfectClears}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-muted-foreground">Hold Used:</span>
+            <span className="font-semibold">{gameState.performance.holdUsed}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

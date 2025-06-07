@@ -31,12 +31,20 @@ const drawerWidth = 240;
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [navVisible, setNavVisible] = useState(false);
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Check if we're on the game page
+  const isGamePage = location.pathname === '/game';
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+
+  const handleNavToggle = () => {
+    setNavVisible(!navVisible);
   };
 
   const handleLogout = async () => {
@@ -75,6 +83,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               component={Link}
               to={item.path}
               selected={location.pathname === item.path}
+              onClick={() => {
+                if (isGamePage) setNavVisible(false);
+              }}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.text} />
@@ -88,7 +99,9 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <ListItemButton
               component={item.path ? Link : 'button'}
               to={item.path}
-              onClick={item.onClick}
+              onClick={item.onClick || (() => {
+                if (isGamePage) setNavVisible(false);
+              })}
               selected={location.pathname === item.path}
             >
               <ListItemIcon>{item.icon}</ListItemIcon>
@@ -100,6 +113,39 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     </div>
   );
 
+  // If we're on the game page, render without the standard navigation
+  if (isGamePage) {
+    return (
+      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+        <CssBaseline />
+        
+        {/* Navigation drawer for game page - only visible when toggled */}
+        <Drawer
+          variant="temporary"
+          open={navVisible}
+          onClose={() => setNavVisible(false)}
+          ModalProps={{
+            keepMounted: true,
+          }}
+          sx={{
+            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
+          }}
+        >
+          {drawer}
+        </Drawer>
+
+        {/* Game page content with navigation toggle available */}
+        <Box component="main" sx={{ flexGrow: 1, position: 'relative' }}>
+          {React.cloneElement(children as React.ReactElement, { 
+            onToggleNav: handleNavToggle,
+            navVisible: navVisible 
+          })}
+        </Box>
+      </Box>
+    );
+  }
+
+  // Standard layout for non-game pages
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
